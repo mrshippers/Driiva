@@ -1,29 +1,16 @@
 {
-  "name": "Driiva - AI-Powered Telematics Insurance",
+  "name": "Driiva",
   "short_name": "Driiva",
-  "description": "Drive well and get rewarded with AI-powered telematics insurance",
+  "description": "Drive well, get rewarded. AI-powered telematics insurance.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0F172A",
-  "theme_color": "#06B6D4",
+  "theme_color": "#0F172A",
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "en",
-  "categories": ["finance", "productivity", "utilities"],
-  "screenshots": [
-    {
-      "src": "/icons/screenshot-1.png",
-      "sizes": "390x844",
-      "type": "image/png",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "/icons/screenshot-2.png",
-      "sizes": "768x1024",
-      "type": "image/png",
-      "form_factor": "wide"
-    }
-  ],
+  "categories": ["finance", "utilities"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
@@ -73,54 +60,5 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "shortcuts": [
-    {
-      "name": "Start Trip",
-      "short_name": "Trip",
-      "description": "Start tracking a new trip",
-      "url": "/?action=start-trip",
-      "icons": [
-        {
-          "src": "/icons/shortcut-trip.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
-      "name": "Report Incident",
-      "short_name": "Incident",
-      "description": "Report a driving incident",
-      "url": "/?action=report-incident",
-      "icons": [
-        {
-          "src": "/icons/shortcut-incident.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
-      "name": "View Score",
-      "short_name": "Score",
-      "description": "Check your driving score",
-      "url": "/?action=view-score",
-      "icons": [
-        {
-          "src": "/icons/shortcut-score.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
-    }
-  ],
-  "prefer_related_applications": false,
-  "edge_side_panel": {
-    "preferred_width": 400
-  },
-  "handle_links": "preferred",
-  "launch_handler": {
-    "client_mode": "navigate-existing"
-  }
+  ]
 }
