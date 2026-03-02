@@ -34,6 +34,10 @@ const TripDetail = lazy(() => import('./pages/trip-detail'));
 const ForgotPassword = lazy(() => import('./pages/forgot-password'));
 const VerifyEmail = lazy(() => import('./pages/verify-email'));
 const AdminFeedback = lazy(() => import('./pages/admin/feedback'));
+const AdminOverview = lazy(() => import('./pages/admin/index'));
+const AdminUsers = lazy(() => import('./pages/admin/users'));
+const AdminTrips = lazy(() => import('./pages/admin/trips'));
+const AdminSystem = lazy(() => import('./pages/admin/system'));
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { OnlineStatusProvider, useOnlineStatusContext } from './contexts/OnlineStatusContext';
@@ -178,9 +182,29 @@ function AppContent() {
           </Route>
 
           {/* Admin routes */}
+          <Route path="/admin/users">
+            <ProtectedRoute>
+              <AdminRoute><AdminUsers /></AdminRoute>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/admin/trips">
+            <ProtectedRoute>
+              <AdminRoute><AdminTrips /></AdminRoute>
+            </ProtectedRoute>
+          </Route>
           <Route path="/admin/feedback">
             <ProtectedRoute>
               <AdminRoute><AdminFeedback /></AdminRoute>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/admin/system">
+            <ProtectedRoute>
+              <AdminRoute><AdminSystem /></AdminRoute>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/admin">
+            <ProtectedRoute>
+              <AdminRoute><AdminOverview /></AdminRoute>
             </ProtectedRoute>
           </Route>
 

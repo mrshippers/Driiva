@@ -190,10 +190,10 @@ export default function Dashboard() {
   // Demo mode — read once on mount
   const [demoUser, setDemoUser] = useState<DemoUser | null>(() => {
     if (typeof window === 'undefined') return null;
-    const demoModeActive = localStorage.getItem('driiva-demo-mode') === 'true';
+    const demoModeActive = sessionStorage.getItem('driiva-demo-mode') === 'true';
     if (!demoModeActive) return null;
     try {
-      const raw = localStorage.getItem('driiva-demo-user');
+      const raw = sessionStorage.getItem('driiva-demo-user');
       return raw ? JSON.parse(raw) : null;
     } catch { return null; }
   });

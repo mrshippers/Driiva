@@ -204,7 +204,7 @@ export default function LeaderboardPage() {
 
   // Check demo mode
   useEffect(() => {
-    const demoModeActive = localStorage.getItem('driiva-demo-mode') === 'true';
+    const demoModeActive = sessionStorage.getItem('driiva-demo-mode') === 'true';
     if (demoModeActive) {
       setIsDemoMode(true);
     }

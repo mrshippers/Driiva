@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Navigation } from 'lucide-react';
 
 interface LocationData {
   lat: number;
@@ -53,14 +54,29 @@ const endIcon = L.divIcon({
   </div>`,
 });
 
-function MapUpdater({ location }: { location: LocationData }) {
+// Tracks user interaction so flyTo doesn't override their pan/zoom
+function InteractionTracker({ userInteracted }: { userInteracted: React.MutableRefObject<boolean> }) {
+  useMapEvents({
+    dragstart: () => { userInteracted.current = true; },
+    zoomstart: () => { userInteracted.current = true; },
+  });
+  return null;
+}
+
+function MapUpdater({
+  location,
+  userInteracted,
+}: {
+  location: LocationData;
+  userInteracted: React.MutableRefObject<boolean>;
+}) {
   const map = useMap();
 
   useEffect(() => {
-    if (location) {
+    if (location && !userInteracted.current) {
       map.flyTo([location.lat, location.lng], 14, { duration: 1.5 });
     }
-  }, [location, map]);
+  }, [location, map, userInteracted]);
 
   return null;
 }
@@ -83,6 +99,7 @@ const LeafletMap = ({ location, routePoints, onLocationChange, className }: Leaf
 
   const [currentLocation, setCurrentLocation] = useState<LocationData | null>(location ?? null);
   const [geoStatus, setGeoStatus] = useState<'idle' | 'loading' | 'granted' | 'denied' | 'unavailable'>('idle');
+  const userInteracted = useRef(false);
 
   useEffect(() => {
     if (location) {
@@ -167,8 +184,12 @@ const LeafletMap = ({ location, routePoints, onLocationChange, className }: Leaf
     );
   }
 
+  const handleRecentre = () => {
+    userInteracted.current = false;
+  };
+
   return (
-    <div className={`rounded-xl overflow-hidden ${className}`}>
+    <div className={`rounded-xl overflow-hidden relative ${className}`}>
       {hasRoute && (
         <div className="flex bg-[#1a1a2e]/80 border-b border-white/10">
           <button
@@ -205,6 +226,8 @@ const LeafletMap = ({ location, routePoints, onLocationChange, className }: Leaf
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
 
+        <InteractionTracker userInteracted={userInteracted} />
+
         {showRoute ? (
           <>
             <FitBounds positions={routePositions} />
@@ -221,7 +244,7 @@ const LeafletMap = ({ location, routePoints, onLocationChange, className }: Leaf
           </>
         ) : currentLocation ? (
           <>
-            <MapUpdater location={currentLocation} />
+            <MapUpdater location={currentLocation} userInteracted={userInteracted} />
             <Marker position={[currentLocation.lat, currentLocation.lng]} icon={liveIcon}>
               <Popup>
                 <span className="text-sm font-bold text-gray-700">
@@ -232,6 +255,22 @@ const LeafletMap = ({ location, routePoints, onLocationChange, className }: Leaf
           </>
         ) : null}
       </MapContainer>
+
+      {/* Re-centre button — shown when user has panned/zoomed away */}
+      {!showRoute && currentLocation && (
+        <button
+          onClick={handleRecentre}
+          className="absolute bottom-3 right-3 z-[1000] w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-opacity"
+          style={{
+            background: 'rgba(15, 23, 42, 0.85)',
+            border: '1px solid rgba(16, 185, 129, 0.35)',
+          }}
+          title="Re-centre on my location"
+          aria-label="Re-centre map"
+        >
+          <Navigation className="w-4 h-4 text-emerald-400" />
+        </button>
+      )}
     </div>
   );
 };

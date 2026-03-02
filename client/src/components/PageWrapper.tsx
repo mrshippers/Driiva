@@ -6,7 +6,7 @@ interface PageWrapperProps {
 export const PageWrapper: React.FC<PageWrapperProps> = ({ children, showNav = true }) => {
   return (
     <div className="min-h-screen">
-      <div className="max-w-md mx-auto px-4 py-6">
+      <div className="max-w-md mx-auto px-4 pt-6 pb-24">
         {children}
       </div>
     </div>

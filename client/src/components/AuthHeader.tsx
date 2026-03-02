@@ -28,8 +28,8 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
     setLocation('/');
 
     try {
-      localStorage.removeItem('driiva-demo-mode');
-      localStorage.removeItem('driiva-demo-user');
+      sessionStorage.removeItem('driiva-demo-mode');
+      sessionStorage.removeItem('driiva-demo-user');
       localStorage.removeItem('driiva-auth-token');
       sessionStorage.clear();
 

@@ -215,7 +215,7 @@ export default function Achievements() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   useEffect(() => {
-    const demoModeActive = localStorage.getItem('driiva-demo-mode') === 'true';
+    const demoModeActive = sessionStorage.getItem('driiva-demo-mode') === 'true';
     
     if (demoModeActive) {
       setIsDemoMode(true);

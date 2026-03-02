@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export function HomeRedirect() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
-  const isDemoMode = typeof window !== 'undefined' && localStorage.getItem('driiva-demo-mode') === 'true';
+  const isDemoMode = typeof window !== 'undefined' && sessionStorage.getItem('driiva-demo-mode') === 'true';
 
   useLayoutEffect(() => {
     if (user || isDemoMode) {

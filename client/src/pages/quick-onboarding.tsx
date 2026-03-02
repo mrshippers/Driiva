@@ -84,7 +84,7 @@ export default function QuickOnboarding() {
     if (authLoading) return; // Wait for AuthContext to resolve
 
     // Check demo mode
-    const isDemoMode = localStorage.getItem('driiva-demo-mode') === 'true';
+    const isDemoMode = sessionStorage.getItem('driiva-demo-mode') === 'true';
     if (isDemoMode) {
       setLocation('/dashboard');
       return;

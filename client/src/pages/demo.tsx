@@ -77,8 +77,8 @@ export default function Demo() {
     setIsEntering(true);
     
     // Set demo mode flags in localStorage
-    localStorage.setItem('driiva-demo-mode', 'true');
-    localStorage.setItem('driiva-demo-user', JSON.stringify(DEMO_USER_DATA));
+    sessionStorage.setItem('driiva-demo-mode', 'true');
+    sessionStorage.setItem('driiva-demo-user', JSON.stringify(DEMO_USER_DATA));
     
     // Navigate next frame — instant feel while allowing button animation
     requestAnimationFrame(() => {

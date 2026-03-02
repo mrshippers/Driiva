@@ -63,9 +63,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function initAuth() {
       try {
-        const demoModeActive = localStorage.getItem('driiva-demo-mode') === 'true';
+        const demoModeActive = sessionStorage.getItem('driiva-demo-mode') === 'true';
         if (demoModeActive) {
-          const demoUserData = localStorage.getItem('driiva-demo-user');
+          const demoUserData = sessionStorage.getItem('driiva-demo-user');
           if (demoUserData) {
             try {
               const parsedUser = JSON.parse(demoUserData);
@@ -104,8 +104,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         // Real Firebase user: always clear demo mode so real account and onboarding flow take over
-        localStorage.removeItem('driiva-demo-mode');
-        localStorage.removeItem('driiva-demo-user');
+        sessionStorage.removeItem('driiva-demo-mode');
+        sessionStorage.removeItem('driiva-demo-user');
         try {
           const token = await firebaseUser.getIdToken();
           const res = await fetch("/api/profile/me", {
@@ -155,7 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         }
       } else {
-        const demoModeActive = localStorage.getItem("driiva-demo-mode") === "true";
+        const demoModeActive = sessionStorage.getItem("driiva-demo-mode") === "true";
         if (!demoModeActive) {
           setUser(null);
         }
@@ -179,8 +179,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
 
     // Clear all localStorage flags
-    localStorage.removeItem('driiva-demo-mode');
-    localStorage.removeItem('driiva-demo-user');
+    sessionStorage.removeItem('driiva-demo-mode');
+    sessionStorage.removeItem('driiva-demo-user');
     localStorage.removeItem('driiva-auth-token');
 
     // Firebase signOut in background (non-blocking for UX)

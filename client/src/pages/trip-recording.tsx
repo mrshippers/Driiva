@@ -234,7 +234,7 @@ export default function TripRecording() {
   const getUserId = useCallback((): string => {
     if (user?.id) return user.id;
     // Demo mode fallback
-    const demoUser = localStorage.getItem('driiva-demo-user');
+    const demoUser = sessionStorage.getItem('driiva-demo-user');
     if (demoUser) {
       try {
         return JSON.parse(demoUser).id || 'demo-user';
@@ -280,7 +280,7 @@ export default function TripRecording() {
         tripStartTimeRef.current = now;
 
         // Demo mode: skip Firestore (no auth.uid = permission denied). Record locally only.
-        const isDemoMode = typeof window !== 'undefined' && localStorage.getItem('driiva-demo-mode') === 'true';
+        const isDemoMode = typeof window !== 'undefined' && sessionStorage.getItem('driiva-demo-mode') === 'true';
 
         // Create trip in Firestore (skip if not configured or demo mode)
         let trip: ActiveTrip | null = null;

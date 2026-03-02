@@ -32,7 +32,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { user, loading } = useAuth();
   const hasRedirected = useRef(false);
 
-  const isDemoMode = typeof window !== 'undefined' && localStorage.getItem('driiva-demo-mode') === 'true';
+  const isDemoMode = typeof window !== 'undefined' && sessionStorage.getItem('driiva-demo-mode') === 'true';
 
   useLayoutEffect(() => {
     if (loading) return;
@@ -118,7 +118,7 @@ export const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({
   const [, setLocation] = useLocation();
   const { user, loading } = useAuth();
 
-  const isDemoMode = typeof window !== 'undefined' && localStorage.getItem('driiva-demo-mode') === 'true';
+  const isDemoMode = typeof window !== 'undefined' && sessionStorage.getItem('driiva-demo-mode') === 'true';
 
   useLayoutEffect(() => {
     if (loading) return;

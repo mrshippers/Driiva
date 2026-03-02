@@ -110,7 +110,7 @@ export default function Trips() {
   const [error, setError] = useState<string | null>(null);
 
   // Demo mode detection
-  const isDemoMode = typeof window !== 'undefined' && localStorage.getItem('driiva-demo-mode') === 'true';
+  const isDemoMode = typeof window !== 'undefined' && sessionStorage.getItem('driiva-demo-mode') === 'true';
 
   // Fetch trips from Firestore (or load demo data)
   useEffect(() => {
