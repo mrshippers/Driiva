@@ -16,3 +16,4 @@ functions/.env
 functions/.env.local
 .vercel
 api/_server.js
+.env.staging

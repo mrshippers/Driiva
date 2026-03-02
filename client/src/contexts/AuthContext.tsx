@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { auth, db, isFirebaseConfigured } from "../lib/firebase";
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User as FirebaseUser } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc } from "firebase/firestore";
+import { getDocWithRetry } from "../lib/firestoreRetry";
 
 interface User {
   id: string;
@@ -32,7 +33,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 async function readOnboardingFromFirestore(uid: string): Promise<boolean> {
   if (!db) return false;
   try {
-    const userSnap = await getDoc(doc(db, 'users', uid));
+    const userSnap = await getDocWithRetry(doc(db, 'users', uid));
     if (userSnap.exists()) {
       return userSnap.data()?.onboardingComplete === true;
     }
@@ -45,7 +46,7 @@ async function readOnboardingFromFirestore(uid: string): Promise<boolean> {
 async function readAdminFlagFromFirestore(uid: string): Promise<boolean> {
   if (!db) return false;
   try {
-    const userSnap = await getDoc(doc(db, 'users', uid));
+    const userSnap = await getDocWithRetry(doc(db, 'users', uid));
     if (userSnap.exists()) {
       return userSnap.data()?.isAdmin === true;
     }

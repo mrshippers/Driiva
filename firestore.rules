@@ -100,6 +100,12 @@ service cloud.firestore {
         allow read: if isOwner(userId);
         allow write: if false;
       }
+
+      // User achievements (unlocked by Cloud Functions; client read-only)
+      match /achievements/{achId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
     }
 
     // =========================================================================
@@ -240,6 +246,15 @@ service cloud.firestore {
     // Authenticated users can submit feedback; no client reads (admin SDK only).
 
     match /feedback/{docId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if false;
+    }
+
+    // =========================================================================
+    // AI FEEDBACK EVENTS (client-side analytics, authenticated create only)
+    // =========================================================================
+
+    match /ai_feedback_events/{docId} {
       allow create: if isAuthenticated();
       allow read, update, delete: if false;
     }

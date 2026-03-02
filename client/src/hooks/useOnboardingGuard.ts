@@ -14,7 +14,8 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { auth, db, isFirebaseConfigured } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
+import { getDocWithRetry } from '@/lib/firestoreRetry';
 import { useAuth } from '@/contexts/AuthContext';
 
 export interface OnboardingGuardResult {
@@ -107,7 +108,7 @@ export function useOnboardingGuard(
         // Check Firestore for onboarding status
         if (!db) throw new Error('Firestore not initialized');
         const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const userDoc = await getDoc(userDocRef);
+        const userDoc = await getDocWithRetry(userDocRef);
         const userData = userDoc.data();
 
         const completed = userData?.onboardingCompleted === true || userData?.onboardingComplete === true;

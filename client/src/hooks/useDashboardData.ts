@@ -281,9 +281,6 @@ export function useDashboardData(userId: string | null): UseDashboardDataResult 
 
   // Subscribe to all data sources
   useEffect(() => {
-    // #region agent log
-    fetch('/api/debug/log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'2f3dd3',hypothesisId:'H-B/H-C',location:'useDashboardData.ts:subscribe-effect',message:'subscribe effect entry',data:{userId,isFirebaseConfigured,dbIsNull:!db},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     if (!userId || !isFirebaseConfigured || !db) {
       setLoading(false);
       setData(DEFAULT_DASHBOARD_DATA);
@@ -303,9 +300,6 @@ export function useDashboardData(userId: string | null): UseDashboardDataResult 
         onSnapshot(
           userRef,
           (snapshot) => {
-            // #region agent log
-            fetch('/api/debug/log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'2f3dd3',hypothesisId:'H-A/H-D',location:'useDashboardData.ts:userDoc-snapshot',message:'userDoc snapshot fired',data:{exists:snapshot.exists(),uid:userId},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             if (snapshot.exists()) {
               setUserDoc(snapshot.data() as UserDocument);
             } else {
@@ -315,9 +309,6 @@ export function useDashboardData(userId: string | null): UseDashboardDataResult 
             setUserDocLoaded(true);
           },
           (err) => {
-            // #region agent log
-            fetch('/api/debug/log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'2f3dd3',hypothesisId:'H-D',location:'useDashboardData.ts:userDoc-error',message:'userDoc snapshot ERROR',data:{code:(err as any)?.code,msg:err?.message},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             console.error('[useDashboardData] User subscription error:', err);
             reportFirestoreError();
             setError(err);
@@ -406,15 +397,9 @@ export function useDashboardData(userId: string | null): UseDashboardDataResult 
 
   // Combine all data sources into dashboard data
   useEffect(() => {
-    // #region agent log
-    fetch('/api/debug/log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'2f3dd3',hypothesisId:'H-A/H-E',location:'useDashboardData.ts:combine-effect',message:'combine effect entry',data:{loading,userDocLoaded,userDocIsNull:!userDoc,userId,isFirebaseConfigured},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     // Wait for the first userDoc snapshot to resolve before assembling data.
     // Using userDocLoaded (not !userDoc) so we don't wait forever when the doc doesn't exist.
     if (!userDocLoaded && userId && isFirebaseConfigured) {
-      // #region agent log
-      fetch('/api/debug/log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'2f3dd3',hypothesisId:'H-A/H-E',location:'useDashboardData.ts:combine-effect-bailed',message:'BAILED early - waiting for first snapshot',data:{userDocLoaded,userId},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       return;
     }
 

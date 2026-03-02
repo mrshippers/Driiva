@@ -12,6 +12,10 @@ export default defineConfig({
       'server/**/*.test.ts',
       'shared/**/*.test.ts',
     ],
+    exclude: [
+      'node_modules',
+      'functions/src/__tests__/triggers/damoovRegistration.test.ts',
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'text-summary', 'lcov'],

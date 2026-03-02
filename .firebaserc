@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "driiva"
+    "default": "driiva",
+    "staging": "driiva-staging"
   }
 }
