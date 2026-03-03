@@ -227,7 +227,7 @@ export default function FirebaseSignIn({ onAuthSuccess }: FirebaseSignInProps) {
                   onClick={() => setIsSignUp(!isSignUp)}
                   className="text-sm text-white/70 hover:text-white/90"
                 >
-                  {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
+                  {isSignUp ? "Sign in" : "Sign up"}
                 </button>
               </div>
             </CardContent>

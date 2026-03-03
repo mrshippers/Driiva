@@ -564,14 +564,8 @@ export default function Dashboard() {
           {(() => {
             const tip = getAiCoachTip(drivingScore);
             return (
-              <div
-                className="rounded-2xl p-4 border border-indigo-500/20"
-                style={{
-                  background: 'rgba(99,102,241,0.08)',
-                  backdropFilter: 'blur(20px)',
-                  WebkitBackdropFilter: 'blur(20px)',
-                }}
-              >
+              <div className="dashboard-glass-card border-indigo-500/20">
+
                 <div className="flex items-center gap-3 mb-3">
                   {/* Pulsing indigo orb */}
                   <div className="relative flex-shrink-0">

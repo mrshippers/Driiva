@@ -16,7 +16,7 @@ export default function BottomNavigation() {
     },
     { 
       path: '/rewards', 
-      icon: StatsIcon, 
+      icon: RewardsIcon, 
       label: 'Rewards'
     },
     { 
@@ -156,7 +156,7 @@ function TripsIcon({ className }: { className?: string }) {
   );
 }
 
-function StatsIcon({ className }: { className?: string }) {
+function RewardsIcon({ className }: { className?: string }) {
   return (
     <svg 
       className={className}
@@ -167,9 +167,11 @@ function StatsIcon({ className }: { className?: string }) {
       strokeLinecap="round" 
       strokeLinejoin="round"
     >
-      <line x1="18" y1="20" x2="18" y2="10" />
-      <line x1="12" y1="20" x2="12" y2="4" />
-      <line x1="6" y1="20" x2="6" y2="14" />
+      <path d="M20 12v10H4V12" />
+      <rect x="2" y="7" width="20" height="5" rx="1" />
+      <path d="M12 22V7" />
+      <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+      <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
     </svg>
   );
 }

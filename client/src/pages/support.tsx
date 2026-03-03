@@ -47,7 +47,7 @@ export default function Support() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pt-safe">
       <div className="max-w-md mx-auto px-4 py-6 pb-24 text-white flex-1">
         <div className="flex items-center gap-3 mb-6">
           <button

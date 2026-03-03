@@ -144,25 +144,13 @@ export default function Signup() {
         batch.commit(),
       ]);
 
-      // Send verification email — await so we can show feedback if it fails
-      // continueUrl brings the user back to /verify-email after clicking the link
-      try {
-        await sendEmailVerification(user, {
-          url: `${window.location.origin}/verify-email`,
-        });
-        console.log('[Signup] Verification email sent to', user.email);
-      } catch (verifyErr: any) {
-        // Non-fatal: user can resend from /verify-email; log the real reason
-        console.warn('[Signup] sendEmailVerification failed:', verifyErr?.code, verifyErr?.message);
-      }
-
-      // Set user in context with onboarding NOT complete
+      // Set user in context and navigate immediately — no blocking on email send
       setUser({
         id: user.uid,
         email: user.email || formData.email,
         name: formData.fullName,
         onboardingComplete: false,
-        emailVerified: false, // new email/password accounts start unverified
+        emailVerified: false,
       });
 
       toast({
@@ -170,8 +158,15 @@ export default function Signup() {
         description: "Check your inbox for a verification email, then let's get you set up.",
       });
 
-      // Navigate to quick onboarding immediately after successful signup
       setLocation("/quick-onboarding");
+
+      // Fire-and-forget: send verification email in background
+      sendEmailVerification(user, {
+        url: `${window.location.origin}/verify-email`,
+      }).then(
+        () => console.log('[Signup] Verification email sent to', user.email),
+        (err: any) => console.warn('[Signup] sendEmailVerification failed:', err?.code, err?.message),
+      );
 
     } catch (err: any) {
       console.error("Signup error:", err);
@@ -209,7 +204,7 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col p-6 text-white relative z-10">
+    <div className="min-h-screen flex flex-col p-6 pt-safe text-white relative z-10">
       <div className="flex items-center justify-between mb-8">
         <motion.button
           onClick={handleBack}
@@ -338,16 +333,13 @@ export default function Signup() {
           </motion.button>
         </form>
 
-        <div className="mt-8 text-center space-y-2">
-          <p className="text-white/50 text-sm">
-            Already have an account?{" "}
-            <button
-              onClick={() => setLocation("/signin")}
-              className="text-orange-400 hover:text-orange-300 font-medium"
-            >
-              Sign in
-            </button>
-          </p>
+        <div className="mt-8 text-center space-y-3">
+          <button
+            onClick={() => setLocation("/signin")}
+            className="text-orange-400 hover:text-orange-300 font-medium text-sm"
+          >
+            Sign in
+          </button>
           <p className="text-white/50 text-sm">
             Just exploring?{" "}
             <button

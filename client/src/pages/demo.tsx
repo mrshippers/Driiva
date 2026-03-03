@@ -2,7 +2,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { ArrowLeft, Car, TrendingUp, Users, Trophy, Play, Loader2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import signinLogo from "@/assets/driiva-logo-CLEAR-FINAL.png";
 import { calculateAnnualPremium, DEMO_PRICING_INPUTS } from "@/lib/pricingEngine";
 
@@ -96,7 +95,7 @@ export default function Demo() {
   };
 
   return (
-    <div className="min-h-screen text-white relative overflow-hidden">
+    <div className="min-h-screen pt-safe text-white relative overflow-hidden">
       <div className="relative z-10 min-h-screen flex items-center justify-center px-5 py-12">
         {/* Back Button */}
         <motion.button
@@ -121,17 +120,7 @@ export default function Demo() {
           }}
           className="w-full max-w-sm"
         >
-          <Card
-            className="w-full"
-            style={{
-              background: 'rgba(20, 20, 30, 0.7)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              backdropFilter: 'blur(20px)',
-              borderRadius: '20px',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-            }}
-          >
-            <CardContent className="px-5 py-6">
+          <div className="dashboard-glass-card w-full px-5 py-6">
               {/* Header */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -173,7 +162,7 @@ export default function Demo() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.5 + index * 0.1 }}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10"
+                      className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/10"
                     >
                       <div className={`w-10 h-10 ${feature.bg} rounded-lg flex items-center justify-center`}>
                         <Icon className={`w-5 h-5 ${feature.color}`} />
@@ -226,20 +215,16 @@ export default function Demo() {
                       Create account
                     </button>
                   </p>
-                  <p className="text-white/50 text-sm">
-                    Already have an account?{" "}
-                    <button
-                      type="button"
-                      onClick={() => setLocation('/signin')}
-                      className="text-cyan-400 hover:text-cyan-300 font-medium"
-                    >
-                      Sign in
-                    </button>
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setLocation('/signin')}
+                    className="text-cyan-400 hover:text-cyan-300 font-medium text-sm"
+                  >
+                    Sign in
+                  </button>
                 </div>
               </motion.div>
-            </CardContent>
-          </Card>
+          </div>
         </motion.div>
       </div>
     </div>

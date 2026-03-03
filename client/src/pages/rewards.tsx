@@ -286,14 +286,14 @@ export default function Rewards() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: timing.interaction, duration: timing.pageTransition, ease: easing.button }}
         >
-          <GlassCard className="p-1.5 flex">
+          <GlassCard className="p-1 flex gap-1">
             {["achievements", "rewards", "progress"].map((tab) => (
               <motion.button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
-                className={`flex-1 py-3 px-4 rounded-xl font-medium text-sm min-h-[44px] transition-colors duration-200 ${activeTab === tab
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                  : "text-white/50 hover:text-white hover:bg-white/5"
+                className={`flex-1 py-1.5 px-3 rounded-full font-semibold text-xs tracking-wide transition-all duration-150 ${activeTab === tab
+                  ? "bg-emerald-500/[0.18] text-emerald-300 border border-emerald-400/50 shadow-[inset_0_1px_0_rgba(52,211,153,0.18)]"
+                  : "text-white/40 hover:text-white/70 hover:bg-white/[0.09] border border-transparent"
                   }`}
                 whileTap={microInteractions.tap}
               >

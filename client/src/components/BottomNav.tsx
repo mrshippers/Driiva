@@ -1,11 +1,11 @@
 import { useLocation, Link } from 'wouter';
 import { motion } from 'framer-motion';
-import { Home, Map, TrendingUp, User } from 'lucide-react';
+import { Home, Map, Gift, User } from 'lucide-react';
 
 const navItems = [
   { icon: Home, label: 'Home', path: '/dashboard' },
   { icon: Map, label: 'Trips', path: '/trips' },
-  { icon: TrendingUp, label: 'Rewards', path: '/rewards' },
+  { icon: Gift, label: 'Rewards', path: '/rewards' },
   { icon: User, label: 'Profile', path: '/profile' },
 ] as const;
 

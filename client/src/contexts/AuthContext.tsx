@@ -119,42 +119,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         sessionStorage.removeItem('driiva-demo-mode');
         sessionStorage.removeItem('driiva-demo-user');
         try {
-          const token = await firebaseUser.getIdToken();
+          // Reload to pick up latest emailVerified state from Firebase servers
+          await firebaseUser.reload();
+          const refreshedUser = auth!.currentUser!;
+          const emailVerified = refreshedUser.emailVerified;
+
+          const token = await refreshedUser.getIdToken();
           const [res, adminFlag] = await Promise.all([
             fetch("/api/profile/me", {
               headers: { Authorization: `Bearer ${token}` },
               credentials: "include",
             }),
-            readAdminFlagFromFirestore(firebaseUser.uid, firebaseUser.email ?? undefined),
+            readAdminFlagFromFirestore(refreshedUser.uid, refreshedUser.email ?? undefined),
           ]);
           if (res.ok) {
             const profile = await res.json();
             setUser({
-              id: firebaseUser.uid,
-              email: profile.email ?? firebaseUser.email ?? "",
-              name: profile.name ?? firebaseUser.displayName ?? firebaseUser.email?.split("@")[0] ?? "User",
+              id: refreshedUser.uid,
+              email: profile.email ?? refreshedUser.email ?? "",
+              name: profile.name ?? refreshedUser.displayName ?? refreshedUser.email?.split("@")[0] ?? "User",
               onboardingComplete: profile.onboardingComplete === true,
-              emailVerified: firebaseUser.emailVerified,
+              emailVerified,
               isAdmin: adminFlag,
             });
           } else {
-            // API unavailable (e.g. no service account key configured) — fall back to Firestore
             const [onboardingComplete, adminFlag] = await Promise.all([
-              readOnboardingFromFirestore(firebaseUser.uid),
-              readAdminFlagFromFirestore(firebaseUser.uid, firebaseUser.email ?? undefined),
+              readOnboardingFromFirestore(refreshedUser.uid),
+              readAdminFlagFromFirestore(refreshedUser.uid, refreshedUser.email ?? undefined),
             ]);
             setUser({
-              id: firebaseUser.uid,
-              email: firebaseUser.email ?? "",
-              name: firebaseUser.displayName ?? firebaseUser.email?.split("@")[0] ?? "User",
+              id: refreshedUser.uid,
+              email: refreshedUser.email ?? "",
+              name: refreshedUser.displayName ?? refreshedUser.email?.split("@")[0] ?? "User",
               onboardingComplete,
-              emailVerified: firebaseUser.emailVerified,
+              emailVerified,
               isAdmin: adminFlag,
             });
           }
         } catch (error) {
           console.error("[AuthContext] Error fetching profile from API:", error);
-          // Fall back to Firestore instead of defaulting to onboardingComplete: false
           const [onboardingComplete, adminFlag] = await Promise.all([
             readOnboardingFromFirestore(firebaseUser.uid),
             readAdminFlagFromFirestore(firebaseUser.uid, firebaseUser.email ?? undefined),

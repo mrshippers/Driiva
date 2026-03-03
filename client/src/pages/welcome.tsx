@@ -230,7 +230,7 @@ export default function Welcome() {
             className="hero-cta-tertiary"
             aria-label="Sign in to existing account"
           >
-            I Already Have an Account
+            Sign In
           </button>
         </motion.div>
       </div>
