@@ -30,7 +30,7 @@ export default function QuickActions({ onReportIncident }: QuickActionsProps) {
       description: "Chat & Help",
       color: "bg-[#A855F7] bg-opacity-20",
       iconColor: "text-[#A855F7]",
-      onClick: () => window.open('mailto:support@driiva.co.uk', '_blank'),
+      onClick: () => window.open('mailto:info@driiva.co.uk', '_blank'),
       href: "/profile"
     },
     {

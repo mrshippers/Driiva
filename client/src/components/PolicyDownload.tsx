@@ -126,7 +126,7 @@ export default function PolicyDownload({ userId, userData, policyNumber }: Polic
             </div>
             <div class="detail-row">
                 <span class="label">Email Support:</span>
-                <span class="value">support@driiva.co.uk</span>
+                <span class="value">info@driiva.co.uk</span>
             </div>
             <div class="detail-row">
                 <span class="label">Website:</span>
