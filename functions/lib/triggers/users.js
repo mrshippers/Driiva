@@ -48,6 +48,13 @@ const types_1 = require("../types");
 const region_1 = require("../lib/region");
 const damoov_1 = require("../lib/damoov");
 const db = admin.firestore();
+// Comma-separated list of emails that are automatically granted admin access.
+// Set ADMIN_EMAILS in functions/.env or Firebase Secret Manager.
+// e.g. ADMIN_EMAILS=founder@driiva.co.uk,ops@driiva.co.uk
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
 /**
  * Triggered when a new user document is created in Firestore.
  *
@@ -55,6 +62,8 @@ const db = admin.firestore();
  *   1. Checks if the user already has an active policy (idempotency)
  *   2. Creates a default 'pending' policy with standard coverage
  *   3. Links the policy reference back to the user document
+ *   4. Auto-promotes to admin if email is in ADMIN_EMAILS env var
+ *   5. Auto-promotes first ever user to admin (zero-config admin bootstrap)
  *
  * Notes:
  *   - Policy status starts as 'pending' (not 'active') until payment/quote is confirmed
@@ -69,11 +78,27 @@ exports.onUserCreate = functions
     .onCreate(async (snap, context) => {
     const userId = context.params.userId;
     const userData = snap.data();
+    const email = userData?.email || '';
     functions.logger.info(`New user created: ${userId}`, {
-        email: userData?.email,
+        email,
         displayName: userData?.displayName || userData?.fullName,
     });
     try {
+        // ── Admin auto-promotion ──────────────────────────────────────────────
+        // Priority 1: email is in the ADMIN_EMAILS allowlist
+        const isAdminEmail = ADMIN_EMAILS.length > 0 && ADMIN_EMAILS.includes(email.toLowerCase());
+        // Priority 2: first user ever (bootstrap — no other users exist yet)
+        const usersSnapshot = await db.collection(types_1.COLLECTION_NAMES.USERS).limit(2).get();
+        const isFirstUser = usersSnapshot.size === 1;
+        if (isAdminEmail || isFirstUser) {
+            const reason = isAdminEmail ? 'ADMIN_EMAILS allowlist' : 'first user bootstrap';
+            functions.logger.info(`Auto-promoting ${userId} (${email}) to admin — reason: ${reason}`);
+            await snap.ref.update({
+                isAdmin: true,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                updatedBy: 'cloud-function-admin-promotion',
+            });
+        }
         // 1. Check if a policy already exists for this user (idempotency guard)
         const existingPolicies = await db
             .collection(types_1.COLLECTION_NAMES.POLICIES)
@@ -175,7 +200,6 @@ exports.onUserCreate = functions
         functions.logger.info(`Initialized driving profile for user ${userId}`);
         // 6. Silently register user with Damoov for telematics data collection.
         // Non-blocking: failure does not affect user creation or policy setup.
-        const email = userData?.email;
         if (email) {
             const deviceToken = await (0, damoov_1.createDamoovUser)(userId, email);
             if (deviceToken) {

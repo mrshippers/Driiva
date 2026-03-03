@@ -14,6 +14,8 @@ import * as functions from 'firebase-functions';
  *   1. Checks if the user already has an active policy (idempotency)
  *   2. Creates a default 'pending' policy with standard coverage
  *   3. Links the policy reference back to the user document
+ *   4. Auto-promotes to admin if email is in ADMIN_EMAILS env var
+ *   5. Auto-promotes first ever user to admin (zero-config admin bootstrap)
  *
  * Notes:
  *   - Policy status starts as 'pending' (not 'active') until payment/quote is confirmed

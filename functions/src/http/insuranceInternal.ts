@@ -5,9 +5,8 @@
  * Extracted here to avoid duplicating Root API logic across modules.
  */
 
-import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import { COLLECTION_NAMES, UserDocument, PolicyDocument, CoverageType } from '../types';
+import { COLLECTION_NAMES, UserDocument, CoverageType } from '../types';
 
 const db = admin.firestore();
 
@@ -66,7 +65,7 @@ export async function acceptInsuranceQuoteInternal(
   // Ensure Root policyholder
   let policyholderPackageId: string = (user as any).rootPolicyholderId;
   if (!policyholderPackageId) {
-    const nameParts = (user.fullName || '').trim().split(/\s+/);
+    const nameParts = (user.displayName || '').trim().split(/\s+/);
     const ph = await rootApiFetch<{ policyholder_id: string }>('/policyholders', 'POST', {
       first_name: nameParts[0] || 'Driver',
       last_name: nameParts.slice(1).join(' ') || 'Unknown',

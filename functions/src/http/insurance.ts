@@ -190,7 +190,7 @@ async function ensurePolicyholder(
     return (user as any).rootPolicyholderId as string;
   }
 
-  const nameParts = (user.fullName || '').trim().split(/\s+/);
+  const nameParts = (user.displayName || '').trim().split(/\s+/);
   const firstName = nameParts[0] || 'Driver';
   const lastName = nameParts.slice(1).join(' ') || 'Unknown';
 
