@@ -1096,7 +1096,9 @@ function CelebrationStep({ onContinue, userName, userEmail }: {
   useEffect(() => {
     const t1 = setTimeout(() => setShowContent(true), 200);
     const t2 = setTimeout(async () => {
-      if (!userEmail) { onContinue(); return; }
+      if (!userEmail) {
+        onContinue(); return;
+      }
       const support = await checkBiometricSupport();
       if (support.supported && support.platformAuthenticator) {
         const already = await checkHasPasskey(userEmail);
@@ -1237,7 +1239,7 @@ function CelebrationStep({ onContinue, userName, userEmail }: {
                 {isRegistering ? 'Setting up…' : 'Enable passkey'}
               </button>
               <button
-                onClick={onContinue}
+                onClick={() => onContinue()}
                 className="w-full py-3 rounded-xl text-white/50 hover:text-white/70 text-sm transition-colors"
               >
                 Skip for now

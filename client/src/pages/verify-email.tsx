@@ -152,7 +152,8 @@ export default function VerifyEmail() {
   // ProtectedRoute respects this flag so it won't redirect back here.
   const handleSkipForNow = () => {
     sessionStorage.setItem('driiva-skip-email-verification', 'true');
-    setLocation('/dashboard');
+    // If onboarding not complete, go to quick-onboarding so we never mount dashboard and show its spinner (H4 fix).
+    setLocation(user?.onboardingComplete === true ? '/dashboard' : '/quick-onboarding');
   };
 
   // Processing link from email
