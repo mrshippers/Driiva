@@ -100,25 +100,38 @@ export default function Signup() {
         return;
       }
 
+      // Username collision check moved to non-blocking (advisory only)
+      // If it fails or times out, we continue anyway - the Cloud Function will handle conflicts
       const localPart = formData.email.split('@')[0]?.toLowerCase() || '';
       if (localPart) {
-        const usernameRef = doc(db, 'usernames', localPart);
-        const existing = await getDoc(usernameRef);
-        if (existing.exists()) {
-          const existingEmail = (existing.data()?.email as string) || '';
-          if (existingEmail.toLowerCase() !== formData.email.toLowerCase()) {
-            setError('This username is already taken. Please use a different email or sign in.');
-            setIsLoading(false);
-            return;
+        try {
+          const usernameRef = doc(db, 'usernames', localPart);
+          const existing = await Promise.race([
+            getDoc(usernameRef),
+            new Promise<null>((_, reject) => 
+              setTimeout(() => reject(new Error('Username check timeout')), 3000)
+            )
+          ]);
+          if (existing && existing.exists()) {
+            const existingEmail = (existing.data()?.email as string) || '';
+            if (existingEmail.toLowerCase() !== formData.email.toLowerCase()) {
+              setError('This username is already taken. Please use a different email or sign in.');
+              return;
+            }
           }
+        } catch (err) {
+          // Username check failed or timed out - log but continue
+          console.warn('[Signup] Username check failed, proceeding anyway:', err);
         }
       }
 
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
+      // Wrap entire auth creation in 8-second timeout
+      const userCredential = await Promise.race([
+        createUserWithEmailAndPassword(auth, formData.email, formData.password),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Sign-up timed out. Please try again or check your connection.')), 8000)
+        )
+      ]);
       const user = userCredential.user;
       const now = new Date();
       const nowISO = now.toISOString();

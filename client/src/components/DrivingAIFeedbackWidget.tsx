@@ -1,10 +1,10 @@
 /**
- * DRIVING AI FEEDBACK WIDGET ("AI Coach")
+ * DRIVING AI FEEDBACK WIDGET ("AI Driiva")
  * ========================================
  * Inline widget placed below score breakdown on trip detail pages.
  *
  * Compact state (default): pulsing indigo orb + local round-robin insight.
- * Expanded state: LLM-powered deep analysis via /api/ai/coach.
+ * Expanded state: LLM-powered deep analysis via /api/ai/driiva.
  */
 
 import { useState, useMemo } from 'react';
@@ -215,7 +215,7 @@ export default function DrivingAIFeedbackWidget({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="text-xs font-semibold text-indigo-300">AI Coach</span>
+                  <span className="text-xs font-semibold text-indigo-300">AI Driiva</span>
           </div>
           <p className="text-sm text-white/70 leading-snug">{localInsight}</p>
         </div>
@@ -264,7 +264,7 @@ export default function DrivingAIFeedbackWidget({
               {/* Error */}
               {error && !isLoading && (
                 <div className="text-center py-4 space-y-2">
-                  <p className="text-xs text-white/50">AI Coach is taking a break. Try again shortly.</p>
+                  <p className="text-xs text-white/50">AI Driiva is taking a break. Try again shortly.</p>
                   <button
                     onClick={() => refetch()}
                     className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-medium"

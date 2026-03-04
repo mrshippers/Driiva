@@ -24,9 +24,10 @@ Indexes can take several minutes to build. Check status in [Firebase Console →
 
 ## Composite Indexes
 
+*Note: A composite on `trips` with only `(userId, startedAt)` and a COLLECTION_GROUP index on `trips` with only `startedAt` were removed — Firestore reports them as "not necessary, configure using single field index controls".*
+
 | Collection      | Fields (order) | Used by |
 |-----------------|----------------|--------|
-| **trips**       | `userId` (asc), `startedAt` (desc) | Trip history: all trips for a user, paginated by `startedAt` |
 | **trips**       | `userId` (asc), `status` (asc), `startedAt` (desc) | Trip history with status filter (e.g. `status === 'completed'`) |
 | **trips**       | `userId` (asc), `status` (asc), `endedAt` (desc) | **Dashboard**: last N trips (e.g. last 3 completed) ordered by `endedAt` |
 | **trips**       | `anomalies.flaggedForReview` (asc), `createdAt` (desc) | Admin/review queries for flagged trips |
@@ -38,6 +39,11 @@ Indexes can take several minutes to build. Check status in [Firebase Console →
 | **poolShares**  | `userId` (asc), `poolPeriod` (desc) | User’s pool share history |
 | **poolShares**  | `poolPeriod` (asc), `status` (asc) | Pool period + status (scheduled jobs) |
 | **poolShares**  | `poolPeriod` (asc), `weightedScore` (desc) | Pool rankings by period |
+| **poolShares**  | `userId` (asc), `status` (asc) | User pool share by status |
+| **tripSegments**| `userId` (asc), `classifiedAt` (desc) | Classifier output by user |
+| **trips**       | `userId` (asc), `score` (desc), `startedAt` (desc) | Trips by score |
+| **leaderboard**| `periodType` (asc), `period` (desc) | Precomputed leaderboard by period |
+| **feedback**    | `timestamp` (desc) | Admin feedback view: recent feedback by date |
 
 ---
 

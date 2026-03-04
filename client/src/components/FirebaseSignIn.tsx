@@ -10,7 +10,7 @@ import {
 import { auth, isFirebaseConfigured } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { GlassCard } from "@/components/GlassCard";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, LogIn, User, Lock, Mail } from "lucide-react";
@@ -106,7 +106,7 @@ export default function FirebaseSignIn({ onAuthSuccess }: FirebaseSignInProps) {
   };
 
   return (
-    <div className="min-h-screen text-white relative overflow-hidden">
+    <div className="min-h-screen pt-safe text-white relative overflow-hidden">
       <FloatingStardust density={150} />
       
       <div className="absolute inset-0 flex items-center justify-center opacity-10">
@@ -128,13 +128,7 @@ export default function FirebaseSignIn({ onAuthSuccess }: FirebaseSignInProps) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.2 }}
         >
-          <Card className="w-full max-w-md mx-auto" style={{
-            background: 'rgba(255, 255, 255, 0.08)',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            backdropFilter: 'blur(20px)',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)',
-          }}>
-            <CardContent className="p-8">
+          <GlassCard className="w-full max-w-md mx-auto p-8">
               <div className="flex justify-center mb-8">
                 <DriivaLogo />
               </div>
@@ -230,8 +224,7 @@ export default function FirebaseSignIn({ onAuthSuccess }: FirebaseSignInProps) {
                   {isSignUp ? "Sign in" : "Sign up"}
                 </button>
               </div>
-            </CardContent>
-          </Card>
+          </GlassCard>
         </motion.div>
       </div>
     </div>

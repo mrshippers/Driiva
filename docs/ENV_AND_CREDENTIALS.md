@@ -91,6 +91,21 @@ Set via **Firebase config** and/or **Firebase secrets** (and optionally `functio
   `firebase functions:secrets:set ANTHROPIC_API_KEY`  
   `firebase functions:secrets:set ROOT_API_KEY`
 
+**Damoov (telematics sync)**  
+- **DAMOOV_INSTANCE_ID** and **DAMOOV_INSTANCE_KEY** are required by `onUserCreate` and `syncDamoovTrips`. If they’re missing, `firebase deploy --only functions` fails.  
+- To unblock deploy, placeholders were created:  
+  `firebase functions:secrets:set DAMOOV_INSTANCE_ID` and `DAMOOV_INSTANCE_KEY` (e.g. value `placeholder`).  
+- When you have real Damoov credentials, overwrite:  
+  `firebase functions:secrets:set DAMOOV_INSTANCE_ID`  
+  `firebase functions:secrets:set DAMOOV_INSTANCE_KEY`  
+  then redeploy: `firebase deploy --only functions`.
+
+**If Functions deploy fails (Cloud Build)**  
+- Build runs in **europe-west2**. Open [Cloud Build history](https://console.cloud.google.com/cloud-build/builds?project=894211619782), filter by region **europe-west2**, open a failed build and check the **Build log** for the real error (e.g. missing dependency, Node version, or out-of-memory).  
+- With **gcloud** installed:  
+  `gcloud builds list --region=europe-west2 --project=driiva --limit=5`  
+  then `gcloud builds log BUILD_ID --region=europe-west2 --project=driiva`.
+
 ---
 
 ## 4. Legacy / other (you may not need these)

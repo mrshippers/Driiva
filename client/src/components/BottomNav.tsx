@@ -14,8 +14,12 @@ export const BottomNav: React.FC = () => {
   
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 z-40"
-      style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 4px)' }}
+      className="fixed bottom-0 left-0 right-0 z-50"
+      style={{ 
+        paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 4px)',
+        willChange: 'transform',
+        transform: 'translateZ(0)'
+      }}
     >
       <div 
         className="border-t border-white/[0.08]"

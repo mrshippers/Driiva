@@ -663,7 +663,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   // Perplexity AI endpoint (protected)
   // -------------------------------------------------------------------------
-  // AI Coach — structured driving feedback per trip
+  // AI Driiva — structured driving feedback per trip
   // -------------------------------------------------------------------------
 
   const coachRateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -724,7 +724,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const apiKey = process.env.AI_COACH_API_KEY ?? process.env.PERPLEXITY_API_KEY;
 
       if (!apiKey) {
-        return res.status(503).json({ message: "AI Coach is not configured" });
+        return res.status(503).json({ message: "AI Driiva is not configured" });
       }
 
       let result: { headline: string; tips: string[]; encouragement: string };
@@ -785,7 +785,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       res.json(result);
     } catch (error: any) {
-      console.error("[AI Coach] Error:", error);
+      console.error("[AI Driiva] Error:", error);
       res.status(500).json({ message: "AI Coach error: " + error.message });
     }
   });

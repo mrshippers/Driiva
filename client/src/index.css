@@ -1015,7 +1015,7 @@ select:focus {
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   color: white;
-  font-size: 15px;
+  font-size: 16px;
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 
@@ -1319,6 +1319,10 @@ body:has(.welcome-page-container) .animated-bg-container {
 .hero-orb-container-welcome {
   /* Ensure orbs sit above gradient, below content */
   z-index: 1;
+  /* Force reset on mount to prevent bfcache distortion */
+  transform: none !important;
+  background-size: cover !important;
+  background-position: center !important;
 }
 
 .hero-orb {

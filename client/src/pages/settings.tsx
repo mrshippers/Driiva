@@ -352,6 +352,21 @@ export default function Settings() {
                 </div>
                 <ChevronRight className="w-4 h-4 text-white/40" />
               </button>
+              {user?.isAdmin && (
+                <button
+                  onClick={() => setLocation('/admin')}
+                  className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors bg-purple-500/5 border-t border-purple-400/20"
+                >
+                  <div className="flex items-center gap-3">
+                    <Shield className="w-5 h-5 text-purple-400" />
+                    <div className="text-left">
+                      <span className="text-white block">Admin Panel</span>
+                      <span className="text-purple-300 text-xs">Manage users, trips & system</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-purple-400" />
+                </button>
+              )}
               <button
                 onClick={() => {
                   // Navigate FIRST, then logout — prevents ProtectedRoute

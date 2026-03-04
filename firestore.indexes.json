@@ -5,14 +5,6 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "startedAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "trips",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "startedAt", "order": "DESCENDING" }
       ]
@@ -131,13 +123,6 @@
         { "fieldPath": "periodType", "order": "ASCENDING" },
         { "fieldPath": "period", "order": "DESCENDING" }
       ]
-    },
-    {
-      "collectionGroup": "trips",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "startedAt", "order": "DESCENDING" }
-      ]
     }
   ],
   "fieldOverrides": [
@@ -174,6 +159,11 @@
     {
       "collectionGroup": "driver_stats",
       "fieldPath": "totalTrips",
+      "indexes": [{ "order": "DESCENDING", "queryScope": "COLLECTION" }]
+    },
+    {
+      "collectionGroup": "feedback",
+      "fieldPath": "timestamp",
       "indexes": [{ "order": "DESCENDING", "queryScope": "COLLECTION" }]
     }
   ]

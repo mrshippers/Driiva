@@ -31,6 +31,32 @@ export default function Welcome() {
     }
   }, [authLoading, user, setLocation]);
 
+  // Force background reset on mount to prevent bfcache distortion
+  useEffect(() => {
+    const container = document.querySelector('.hero-orb-container-welcome');
+    if (container) {
+      // Force reflow to reset any stale transforms
+      (container as HTMLElement).style.transform = 'none';
+    }
+
+    // Handle browser back/forward cache (bfcache)
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        // Page loaded from bfcache - force background refresh
+        const orbs = document.querySelectorAll('.hero-orb');
+        orbs.forEach((orb) => {
+          (orb as HTMLElement).style.animation = 'none';
+          setTimeout(() => {
+            (orb as HTMLElement).style.animation = '';
+          }, 10);
+        });
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
+
   // Navigate to the demo page - demo mode is activated there, NOT here
   const goToDemo = () => {
     setLocation('/demo');
@@ -230,7 +256,7 @@ export default function Welcome() {
             className="hero-cta-tertiary"
             aria-label="Sign in to existing account"
           >
-            Sign In
+            Sign in
           </button>
         </motion.div>
       </div>

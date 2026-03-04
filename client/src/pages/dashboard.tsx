@@ -151,7 +151,7 @@ function getScoreMessage(score: number): string {
   return "Keep practising safe driving to unlock rewards.";
 }
 
-const AI_COACH_TIPS = [
+const AI_DRIIVA_TIPS = [
   { headline: "Anticipate the road ahead", tip: "Look 10–15 seconds forward. Spotting hazards early means smoother, gentler braking — which directly improves your score.", icon: "👁" },
   { headline: "Lift off gently", tip: "Releasing the accelerator gradually before a junction saves fuel and avoids the hard-braking penalty that chips away at your score.", icon: "🦶" },
   { headline: "Speed limits are scoring limits", tip: "Even brief periods above the limit add speeding seconds to your score. Staying within limits is the single biggest score multiplier.", icon: "🏎" },
@@ -160,10 +160,10 @@ const AI_COACH_TIPS = [
   { headline: "Night driving costs more", tip: "Fatigue and reduced visibility increase risk at night. Keeping night trips short and smooth helps your overall risk profile.", icon: "🌙" },
 ];
 
-function getAiCoachTip(score: number): typeof AI_COACH_TIPS[0] {
-  if (score === 0) return AI_COACH_TIPS[0];
-  const idx = Math.floor(score * 7.3) % AI_COACH_TIPS.length;
-  return AI_COACH_TIPS[idx];
+function getAiDriivaTip(score: number): typeof AI_DRIIVA_TIPS[0] {
+  if (score === 0) return AI_DRIIVA_TIPS[0];
+  const idx = Math.floor(score * 7.3) % AI_DRIIVA_TIPS.length;
+  return AI_DRIIVA_TIPS[idx];
 }
 
 function calculateSurplus(score: number, premium: number): number {
@@ -326,37 +326,34 @@ export default function Dashboard() {
   // Loading state — rely on AuthContext loading, not a separate check
   const isLoading = (!isDemoMode && !user) || (!isDemoMode && dataLoading && !dashboardData);
 
-  if (isLoading) {
-    return (
-      <PageWrapper>
-        <div className="pb-24 text-white">
-          {/* Header skeleton */}
-          <div className="flex items-start justify-between mb-6 animate-pulse">
-            <div className="flex items-start gap-3">
-              <div className="w-12 h-12 rounded-xl bg-white/10" />
-              <div>
-                <div className="h-6 w-20 bg-white/10 rounded mb-2" />
-                <div className="h-4 w-32 bg-white/10 rounded" />
+  return (
+    <>
+      {isLoading ? (
+        <PageWrapper>
+          <div className="pb-24 text-white">
+            {/* Header skeleton */}
+            <div className="flex items-start justify-between mb-6 animate-pulse">
+              <div className="flex items-start gap-3">
+                <div className="w-12 h-12 rounded-xl bg-white/10" />
+                <div>
+                  <div className="h-6 w-20 bg-white/10 rounded mb-2" />
+                  <div className="h-4 w-32 bg-white/10 rounded" />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-white/10" />
+                <div className="w-10 h-10 rounded-full bg-white/10" />
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-white/10" />
-              <div className="w-10 h-10 rounded-full bg-white/10" />
-            </div>
+            
+            <div className="h-8 w-32 bg-white/10 rounded mb-4 animate-pulse" />
+            
+            <ScoreCardSkeleton />
+            <TripsSkeleton />
+            <PoolSkeleton />
           </div>
-          
-          <div className="h-8 w-32 bg-white/10 rounded mb-4 animate-pulse" />
-          
-          <ScoreCardSkeleton />
-          <TripsSkeleton />
-          <PoolSkeleton />
-        </div>
-        <BottomNav />
-      </PageWrapper>
-    );
-  }
-
-  return (
+        </PageWrapper>
+      ) : (
     <PageWrapper>
       <div className="pb-24 text-white">
         {/* Push notification opt-in — only when permission not yet asked/granted */}
@@ -559,14 +556,31 @@ export default function Dashboard() {
           )}
         </motion.div>
 
-        {/* AI Coach Card — always visible, zero-latency static insight */}
+        {/* AI Driiva Card — always visible, zero-latency static insight */}
         <motion.div variants={item} className="mb-4">
           {(() => {
-            const tip = getAiCoachTip(drivingScore);
+            const tip = getAiDriivaTip(drivingScore);
+            const [showDeepInsight, setShowDeepInsight] = useState(false);
+            const [currentInsightIndex] = useState(() => Math.floor(Math.random() * 7));
+            
+            // 7 pre-written coaching statements
+            const DEEP_INSIGHTS = [
+              { icon: '🎯', text: 'Great smooth braking on your last 3 trips! Keep that gentle touch on the pedal—it reduces wear and boosts your safety score.' },
+              { icon: '⚠️', text: 'Watch your speed—you went 8mph over the limit on Main Street yesterday. Staying within limits protects your score and wallet.' },
+              { icon: '🌙', text: 'Night driving can be tricky. Extra caution after sunset pays off—reduced visibility means slower reactions, so give yourself more time.' },
+              { icon: '⛽', text: 'Tip: Gradual acceleration uses 20% less fuel and boosts your efficiency score. Think of the throttle as a dimmer, not a switch.' },
+              { icon: '🔄', text: 'Sharp turns detected on Oak Road. Slow down before the bend, not during it—smoother cornering = safer driving = better scores.' },
+              { icon: '📈', text: 'You\'re on a 5-trip streak above 85 points. Consistency is key—keep it up and your refund rate climbs steadily!' },
+              { icon: '💰', text: 'Your safe driving has contributed £12.40 to the community pool this month. Every safe mile helps the whole community earn more.' }
+            ];
+            
             return (
-              <div className="dashboard-glass-card border-indigo-500/20">
+              <div className="dashboard-glass-card relative overflow-hidden">
+                {/* Premium gradient glow border */}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-500/20 via-purple-500/15 to-pink-500/20 blur-xl -z-10" />
+                <div className="absolute inset-0 rounded-2xl border border-indigo-400/30" />
 
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3 mb-3 relative z-10">
                   {/* Pulsing indigo orb */}
                   <div className="relative flex-shrink-0">
                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
@@ -576,7 +590,7 @@ export default function Dashboard() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-white">AI Coach</span>
+                      <span className="text-sm font-semibold text-white">AI Driiva</span>
                       <span className="px-1.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[10px] font-medium">Beta</span>
                     </div>
                     <p className="text-xs text-white/40 truncate">Personalised driving insights</p>
@@ -586,12 +600,40 @@ export default function Dashboard() {
                   <p className="text-xs font-semibold text-indigo-300 mb-1">{tip.icon} {tip.headline}</p>
                   <p className="text-xs text-white/70 leading-relaxed">{tip.tip}</p>
                 </div>
+                
+                <AnimatePresence>
+                  {showDeepInsight && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="mb-3 overflow-hidden"
+                    >
+                      <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-400/20">
+                        <p className="text-sm text-indigo-200 leading-relaxed">
+                          {DEEP_INSIGHTS[currentInsightIndex].icon} {DEEP_INSIGHTS[currentInsightIndex].text}
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                
                 <button
-                  onClick={() => setLocation('/trips')}
+                  onClick={() => setShowDeepInsight(!showDeepInsight)}
                   className="w-full py-2 rounded-lg bg-indigo-500/15 border border-indigo-400/25 text-indigo-300 text-xs font-medium hover:bg-indigo-500/25 transition-all flex items-center justify-center gap-1.5"
                 >
-                  View trip-by-trip analysis
-                  <ChevronRight className="w-3.5 h-3.5" />
+                  {showDeepInsight ? (
+                    <>
+                      Hide Insight
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </>
+                  ) : (
+                    <>
+                      Get Deep Insight
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </>
+                  )}
                 </button>
               </div>
             );
@@ -919,8 +961,9 @@ export default function Dashboard() {
           </button>
         </div>
       </div>
-
-      <BottomNav />
     </PageWrapper>
+      )}
+      <BottomNav />
+    </>
   );
 }
