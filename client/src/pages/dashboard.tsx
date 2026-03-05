@@ -202,6 +202,8 @@ export default function Dashboard() {
   // UI state
   const [showDropdown, setShowDropdown] = useState(false);
   const [mapExpanded, setMapExpanded] = useState(false);
+  const [showDeepInsight, setShowDeepInsight] = useState(false);
+  const [currentInsightIndex] = useState(() => Math.floor(Math.random() * 7));
 
   // Resolve userId from AuthContext (no redundant onAuthStateChanged)
   const firebaseUserId = isDemoMode ? null : (user?.id ?? null);
@@ -560,10 +562,7 @@ export default function Dashboard() {
         <motion.div variants={item} className="mb-4">
           {(() => {
             const tip = getAiDriivaTip(drivingScore);
-            const [showDeepInsight, setShowDeepInsight] = useState(false);
-            const [currentInsightIndex] = useState(() => Math.floor(Math.random() * 7));
             
-            // 7 pre-written coaching statements
             const DEEP_INSIGHTS = [
               { icon: '🎯', text: 'Great smooth braking on your last 3 trips! Keep that gentle touch on the pedal—it reduces wear and boosts your safety score.' },
               { icon: '⚠️', text: 'Watch your speed—you went 8mph over the limit on Main Street yesterday. Staying within limits protects your score and wallet.' },

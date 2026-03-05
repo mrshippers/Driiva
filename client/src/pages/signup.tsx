@@ -1,15 +1,13 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { AlertCircle, Loader2, Eye, EyeOff, ArrowLeft, User, Mail, Lock } from "lucide-react";
+import { AlertCircle, Loader2, Eye, EyeOff, User, Mail, Lock } from "lucide-react";
 import { timing, easing, microInteractions } from "@/lib/animations";
 import { auth, db, isFirebaseConfigured } from "../lib/firebase";
 import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from "firebase/auth";
-import { doc, setDoc, getDoc, writeBatch } from "firebase/firestore";
+import { doc, getDoc, writeBatch } from "firebase/firestore";
 import { useAuth } from "../contexts/AuthContext";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { useParallax } from "@/hooks/useParallax";
 import { useToast } from "@/hooks/use-toast";
 
 /**
@@ -34,7 +32,7 @@ export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { ref: cardRef, style: cardParallaxStyle } = useParallax({ speed: 0.3 });
+  const [done, setDone] = useState(false);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -133,31 +131,9 @@ export default function Signup() {
         )
       ]);
       const user = userCredential.user;
-      const now = new Date();
-      const nowISO = now.toISOString();
+      setDone(true);
 
-
-      const batch = writeBatch(db);
-      batch.set(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        email: formData.email,
-        fullName: formData.fullName,
-        onboardingCompleted: false,
-        onboardingComplete: false,
-        createdAt: nowISO,
-        updatedAt: nowISO,
-      });
-      if (localPart) {
-        batch.set(doc(db, 'usernames', localPart), { email: formData.email, uid: user.uid }, { merge: true });
-      }
-      // Policy is created by the onUserCreate Cloud Function trigger
-
-      await Promise.all([
-        updateProfile(user, { displayName: formData.fullName }),
-        batch.commit(),
-      ]);
-
-      // Set user in context and navigate immediately — no blocking on email send
+      // Set user in context and navigate IMMEDIATELY — don't block on Firestore writes
       setUser({
         id: user.uid,
         email: user.email || formData.email,
@@ -173,12 +149,30 @@ export default function Signup() {
 
       setLocation("/quick-onboarding");
 
-      // Fire-and-forget: send verification email in background
-      sendEmailVerification(user, {
-        url: `${window.location.origin}/verify-email`,
-      }).then(
-        () => console.log('[Signup] Verification email sent to', user.email),
-        (err: any) => console.warn('[Signup] sendEmailVerification failed:', err?.code, err?.message),
+      // Fire-and-forget: Firestore writes, profile update, and email verification
+      // The onUserCreate Cloud Function also creates the user doc, so these are best-effort
+      const nowISO = new Date().toISOString();
+      const batch = writeBatch(db);
+      batch.set(doc(db, 'users', user.uid), {
+        uid: user.uid,
+        email: formData.email,
+        fullName: formData.fullName,
+        onboardingCompleted: false,
+        onboardingComplete: false,
+        createdAt: nowISO,
+        updatedAt: nowISO,
+      });
+      if (localPart) {
+        batch.set(doc(db, 'usernames', localPart), { email: formData.email, uid: user.uid }, { merge: true });
+      }
+
+      Promise.all([
+        updateProfile(user, { displayName: formData.fullName }),
+        batch.commit(),
+        sendEmailVerification(user, { url: `${window.location.origin}/verify-email` }),
+      ]).then(
+        () => console.log('[Signup] Background writes + verification email completed'),
+        (err: any) => console.warn('[Signup] Background write failed (non-fatal):', err?.code || err?.message),
       );
 
     } catch (err: any) {
@@ -215,6 +209,14 @@ export default function Signup() {
   const handleBack = () => {
     window.history.back();
   };
+
+  if (done) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-10 h-10 border-3 border-white/20 border-t-white rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col p-6 pt-safe text-white relative z-10">
