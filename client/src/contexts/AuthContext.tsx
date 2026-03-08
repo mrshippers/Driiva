@@ -101,7 +101,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error('[AuthContext] Init error:', error);
       }
-      setLoading(false);
+      // Do NOT call setLoading(false) here for the Firebase-configured path.
+      // onAuthStateChanged is the single source of truth for loading state.
+      // Calling it here creates a race: loading=false before user is resolved,
+      // causing ProtectedRoute to redirect to /signin mid-auth.
     }
 
     initAuth();
@@ -125,14 +128,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const emailVerified = refreshedUser.emailVerified;
 
           const token = await refreshedUser.getIdToken();
+
+          // Wrap the profile fetch in a 5-second timeout using AbortController.
+          // Neon (serverless PostgreSQL) cold-starts can block for 20-27 seconds
+          // without this guard, hanging the entire auth flow.
+          const controller = new AbortController();
+          const fetchTimeoutId = setTimeout(() => controller.abort(), 5000);
           const [res, adminFlag] = await Promise.all([
             fetch("/api/profile/me", {
               headers: { Authorization: `Bearer ${token}` },
               credentials: "include",
-            }),
+              signal: controller.signal,
+            })
+              .catch(() => null as Response | null)
+              .finally(() => clearTimeout(fetchTimeoutId)),
             readAdminFlagFromFirestore(refreshedUser.uid, refreshedUser.email ?? undefined),
           ]);
-          if (res.ok) {
+
+          if (res?.ok) {
             const profile = await res.json();
             setUser({
               id: refreshedUser.uid,
@@ -143,10 +156,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               isAdmin: adminFlag,
             });
           } else {
-            const [onboardingComplete, adminFlag] = await Promise.all([
-              readOnboardingFromFirestore(refreshedUser.uid),
-              readAdminFlagFromFirestore(refreshedUser.uid, refreshedUser.email ?? undefined),
-            ]);
+            // API unreachable or timed out — fall back to Firestore.
+            // Reuse adminFlag already fetched above (no duplicate Firestore read).
+            const onboardingComplete = await readOnboardingFromFirestore(refreshedUser.uid);
             setUser({
               id: refreshedUser.uid,
               email: refreshedUser.email ?? "",

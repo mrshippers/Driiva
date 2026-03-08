@@ -1,0 +1,148 @@
+name: Deploy → Staging (staging branch)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# This workflow runs whenever code is pushed directly to the `staging` branch.
+# Use it to test release candidates before they land on main.
+#
+# Flow:
+#   1. Run full test suite (must pass)
+#   2. Deploy Firebase (Firestore rules + indexes + Cloud Functions) → driiva-staging
+#   3. Deploy client + Express serverless → Vercel staging project
+#
+# Required GitHub Secrets (Settings → Secrets and variables → Actions):
+#   FIREBASE_TOKEN                  firebase login:ci token
+#   VERCEL_TOKEN                    vercel.com/account/tokens
+#   VERCEL_ORG_ID                   Vercel team/personal org ID
+#   VERCEL_PROJECT_ID_STAGING       Vercel project ID for staging deployment
+#   STAGING_DATABASE_URL            Neon staging branch connection string
+#   STAGING_ANTHROPIC_API_KEY       Anthropic key (can reuse production key)
+#   STAGING_ENCRYPTION_KEY          32-byte hex encryption key for telematics
+#   STAGING_FIREBASE_SERVICE_ACCOUNT_KEY  Service account JSON (for WebAuthn)
+#
+# Runtime env vars for the Vercel project are set once in the Vercel dashboard:
+#   DATABASE_URL, ANTHROPIC_API_KEY, ENCRYPTION_KEY, CORS_ORIGINS,
+#   WEBAUTHN_RP_ID, WEBAUTHN_ORIGIN, FIREBASE_SERVICE_ACCOUNT_KEY
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [staging]
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  functions-build:
+    name: Build Cloud Functions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Install functions dependencies
+        run: npm ci
+        working-directory: functions
+
+      - name: Build functions
+        run: npm run build
+        working-directory: functions
+
+      - name: Test functions
+        run: npm test
+        working-directory: functions
+
+      # Upload built functions so the deploy job doesn't need to rebuild
+      - name: Upload functions build
+        uses: actions/upload-artifact@v4
+        with:
+          name: functions-dist
+          path: functions/lib/
+          retention-days: 1
+
+  deploy:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [test, functions-build]
+    environment: staging
+    env:
+      # ── Staging Firebase public config (driiva-staging) ──────────────────
+      VITE_FIREBASE_API_KEY: AIzaSyCl3f6kzImoxUcFFnyET5t-XbjgLwYvX9A
+      VITE_FIREBASE_AUTH_DOMAIN: driiva-staging.firebaseapp.com
+      VITE_FIREBASE_PROJECT_ID: driiva-staging
+      VITE_FIREBASE_STORAGE_BUCKET: driiva-staging.firebasestorage.app
+      VITE_FIREBASE_MESSAGING_SENDER_ID: "36820666947"
+      VITE_FIREBASE_APP_ID: 1:36820666947:web:f95afe817318a5a79862f6
+      VITE_FIREBASE_MEASUREMENT_ID: G-RGXRB5QBEF
+      VITE_SENTRY_DSN: https://180774c56396c59418bd1fca9d3c814d@o4510852635099136.ingest.de.sentry.io/4510852639948880
+      VITE_FEATURE_AI_INSIGHTS: "true"
+      VITE_FEATURE_COMMUNITY_POOL: "true"
+      VITE_FEATURE_LEADERBOARD: "true"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install functions dependencies
+        run: npm ci
+        working-directory: functions
+
+      # Download the functions build artifact from the functions-build job
+      - name: Download functions build
+        uses: actions/download-artifact@v4
+        with:
+          name: functions-dist
+          path: functions/lib/
+
+      # Build the Vite client using staging Firebase env vars (set above)
+      - name: Build client (staging mode)
+        run: npm run build:staging
+
+      # ── Firebase ──────────────────────────────────────────────────────────
+      # Deploys to driiva-staging Firebase project.
+      # Cloud Functions require Blaze plan — if not upgraded yet, change to:
+      #   --only firestore:rules,firestore:indexes
+      - name: Deploy Firebase to staging
+        run: |
+          npx firebase deploy \
+            --only firestore:rules,firestore:indexes,functions \
+            --project staging \
+            --non-interactive
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+
+      # ── Vercel ────────────────────────────────────────────────────────────
+      # Deploys the pre-built client + Express serverless function.
+      # VERCEL_ORG_ID and VERCEL_PROJECT_ID env vars are read automatically
+      # by the Vercel CLI to identify which project to deploy to.
+      - name: Deploy to Vercel (staging)
+        run: npx vercel --prod --token "$VERCEL_TOKEN" --yes
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_STAGING }}

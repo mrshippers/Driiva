@@ -185,10 +185,6 @@ export default function QuickOnboarding() {
 
     setIsLoading(true);
 
-    if (user) {
-      setUser({ ...user, onboardingComplete: true });
-    }
-
     const firebaseUser = auth?.currentUser;
     if (firebaseUser) {
       try {
@@ -237,8 +233,9 @@ export default function QuickOnboarding() {
   };
 
   const goToDashboard = useCallback(() => {
+    setUser(prev => prev ? { ...prev, onboardingComplete: true } : null);
     setLocation('/dashboard');
-  }, [setLocation]);
+  }, [setLocation, setUser]);
 
   /**
    * Handle navigation between steps

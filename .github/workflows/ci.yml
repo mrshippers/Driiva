@@ -92,6 +92,20 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint-and-typecheck, build, functions-build, test]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    env:
+      # ── Staging Firebase public config (driiva-staging project) ──────────
+      # These are public Firebase SDK values — safe to inline in workflow.
+      VITE_FIREBASE_API_KEY: AIzaSyCl3f6kzImoxUcFFnyET5t-XbjgLwYvX9A
+      VITE_FIREBASE_AUTH_DOMAIN: driiva-staging.firebaseapp.com
+      VITE_FIREBASE_PROJECT_ID: driiva-staging
+      VITE_FIREBASE_STORAGE_BUCKET: driiva-staging.firebasestorage.app
+      VITE_FIREBASE_MESSAGING_SENDER_ID: "36820666947"
+      VITE_FIREBASE_APP_ID: 1:36820666947:web:f95afe817318a5a79862f6
+      VITE_FIREBASE_MEASUREMENT_ID: G-RGXRB5QBEF
+      VITE_SENTRY_DSN: https://180774c56396c59418bd1fca9d3c814d@o4510852635099136.ingest.de.sentry.io/4510852639948880
+      VITE_FEATURE_AI_INSIGHTS: "true"
+      VITE_FEATURE_COMMUNITY_POOL: "true"
+      VITE_FEATURE_LEADERBOARD: "true"
     steps:
       - uses: actions/checkout@v4
 
@@ -111,10 +125,35 @@ jobs:
         run: npm run build
         working-directory: functions
 
-      - name: Deploy Firestore rules and indexes to staging
-        run: npx firebase deploy --only firestore:rules,firestore:indexes --project staging
-        # Note: Cloud Functions deploy requires Blaze plan on driiva-staging.
-        # Upgrade at: https://console.firebase.google.com/project/driiva-staging/usage/details
-        # Then change the above to: --only firestore:rules,firestore:indexes,functions
+      # Build client with staging Firebase config (VITE_* vars injected above)
+      - name: Build client (staging)
+        run: npm run build:staging
+
+      # ── Firebase ──────────────────────────────────────────────────────────
+      # Deploys Firestore rules, indexes, and Cloud Functions to driiva-staging.
+      # Requires: FIREBASE_TOKEN secret set in GitHub → Settings → Secrets.
+      # Cloud Functions require the driiva-staging project to be on the Blaze plan.
+      # If not yet upgraded, change --only to: firestore:rules,firestore:indexes
+      - name: Deploy Firebase to staging
+        run: |
+          npx firebase deploy \
+            --only firestore:rules,firestore:indexes,functions \
+            --project staging \
+            --non-interactive
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+
+      # ── Vercel ────────────────────────────────────────────────────────────
+      # Deploys the pre-built client + Express serverless function to Vercel.
+      # Requires these GitHub Secrets:
+      #   VERCEL_TOKEN            — from vercel.com/account/tokens
+      #   VERCEL_ORG_ID           — from .vercel/project.json or Vercel dashboard
+      #   VERCEL_PROJECT_ID_STAGING — Vercel project ID for the staging project
+      # Runtime env vars (DATABASE_URL, ANTHROPIC_API_KEY etc.) must be set in
+      # the Vercel staging project's Environment Variables settings.
+      - name: Deploy to Vercel (staging)
+        run: npx vercel --prod --token "$VERCEL_TOKEN" --yes
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_STAGING }}
