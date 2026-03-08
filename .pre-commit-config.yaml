@@ -1,0 +1,21 @@
+repos:
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args:
+          - --baseline
+          - .secrets.baseline
+        exclude: |
+          (?x)^(
+            package-lock\.json|
+            \.secrets\.baseline
+          )$
+
+  - repo: https://github.com/awslabs/git-secrets
+    rev: 99d01d61028c5072be1e6f165e23c59b9b8533bf
+    hooks:
+      - id: git-secrets
+        entry: git secrets --pre_commit_hook -- "$@"
+        language: system
+        pass_filenames: false

@@ -37,6 +37,7 @@
 - [x] Add Firebase Analytics initialisation — *done: getAnalytics() in client/src/lib/firebase.ts; guarded by VITE_FIREBASE_MEASUREMENT_ID; try/catch for ad-blocker safety*
 - [x] Implement email verification — *done: sendEmailVerification() in signup.tsx; emailVerified field on User type in AuthContext; ProtectedRoute hard-redirects unverified users to /verify-email (skipEmailVerificationCheck=true on /quick-onboarding and /verify-email routes); verify-email.tsx page with resend + check flow*
 - [x] Backend & database security audit — *done: 12 issues found and fixed across Firestore rules, PostgreSQL, Cloud Functions, and API routes. See DRIIVA_CHANGELOG.md for full details.*
+- [x] Set up git-secrets + detect-secrets pre-commit hooks — *done: git-secrets installed with AWS, Google API key (`AIzaSy…`), and Firebase env-var patterns; `.pre-commit-config.yaml` adds detect-secrets as a second layer with a `.secrets.baseline`; `SECURITY.md` documents the secrets policy; GitHub secret scanning should be enabled in repo Settings → Code security → Secret scanning*
 
 ## Sprint: "Make It Payable" (Week 5–6)
 
