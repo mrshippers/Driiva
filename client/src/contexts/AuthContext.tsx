@@ -170,6 +170,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } catch (error) {
           console.error("[AuthContext] Error fetching profile from API:", error);
+          // Attempt reload even in the error path so emailVerified is fresh.
+          // Without this, the stale onAuthStateChanged param may read emailVerified=false
+          // for users who already verified, causing a redirect loop to /verify-email.
+          let freshEmailVerified = firebaseUser.emailVerified;
+          try {
+            await firebaseUser.reload();
+            freshEmailVerified = auth!.currentUser?.emailVerified ?? firebaseUser.emailVerified;
+          } catch {
+            // reload failed — use whatever we have
+          }
           const [onboardingComplete, adminFlag] = await Promise.all([
             readOnboardingFromFirestore(firebaseUser.uid),
             readAdminFlagFromFirestore(firebaseUser.uid, firebaseUser.email ?? undefined),
@@ -179,7 +189,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: firebaseUser.email ?? "",
             name: firebaseUser.displayName ?? firebaseUser.email?.split("@")[0] ?? "User",
             onboardingComplete,
-            emailVerified: firebaseUser.emailVerified,
+            emailVerified: freshEmailVerified,
             isAdmin: adminFlag,
           });
         }
