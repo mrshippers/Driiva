@@ -17,8 +17,8 @@ export interface AuthRequest extends Request {
   auth?: {
     uid: string;
     email?: string;
-    /** Internal DB user id; set after lookup by Firebase UID. */
-    userId: number;
+    /** Internal DB user id; undefined if the user has no record in the Neon DB yet. */
+    userId: number | undefined;
   };
 }
 
@@ -60,7 +60,7 @@ export async function verifyFirebaseAuth(
   req.auth = {
     uid: decoded.uid,
     email: decoded.email,
-    userId: user?.id ?? 0,
+    userId: user?.id,
   };
   next();
 }
@@ -94,7 +94,7 @@ export function requireResourceOwner(paramName = "userId") {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
     const param = req.params[paramName];
     const requestedId = param ? parseInt(String(param), 10) : NaN;
-    if (Number.isNaN(requestedId) || req.auth!.userId !== requestedId) {
+    if (Number.isNaN(requestedId) || req.auth!.userId === undefined || req.auth!.userId !== requestedId) {
       res.status(403).json({
         message: "Forbidden",
         code: "RESOURCE_OWNER_REQUIRED",

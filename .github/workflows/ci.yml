@@ -87,6 +87,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Run coverage
+        run: npm run test:coverage
+
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest

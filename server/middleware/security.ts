@@ -1,6 +1,13 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 
+/**
+ * Normalize key for rate limiting: strip IPv4-mapped IPv6 prefix (::ffff:)
+ * so ::ffff:1.2.3.4 and 1.2.3.4 are treated as the same client.
+ */
+const normalizeIp = (req: express.Request): string =>
+  (req.ip ?? 'unknown').replace(/^::ffff:/, '');
+
 // Rate limiting configuration
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -8,6 +15,7 @@ export const authLimiter = rateLimit({
   message: 'Too many authentication attempts, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: normalizeIp,
 });
 
 export const apiLimiter = rateLimit({
@@ -16,6 +24,7 @@ export const apiLimiter = rateLimit({
   message: 'Too many requests from this IP, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: normalizeIp,
 });
 
 // Webhook limiter for Stripe
@@ -23,6 +32,7 @@ export const webhookLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 10, // limit to 10 requests
   skipSuccessfulRequests: true,
+  keyGenerator: normalizeIp,
 });
 
 // General API limiter for trip data
@@ -30,6 +40,7 @@ export const tripDataLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
   max: 30, // limit to 30 requests
   message: 'Too many trip data requests',
+  keyGenerator: normalizeIp,
 });
 
 // Enhanced security headers
@@ -74,16 +85,16 @@ export const sanitizeInput = (req: express.Request, res: express.Response, next:
 
   // Sanitize body parameters
   if (req.body && typeof req.body === 'object') {
-    const sanitizeObject = (obj: any): any => {
-      Object.keys(obj).forEach(key => {
+    const sanitizeObject = (obj: Record<string, unknown>): void => {
+      for (const key of Object.keys(obj)) {
         if (typeof obj[key] === 'string') {
-          obj[key] = obj[key].trim().replace(/[<>]/g, '');
-        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-          sanitizeObject(obj[key]);
+          obj[key] = (obj[key] as string).trim().replace(/[<>]/g, '');
+        } else if (obj[key] !== null && typeof obj[key] === 'object') {
+          sanitizeObject(obj[key] as Record<string, unknown>);
         }
-      });
+      }
     };
-    sanitizeObject(req.body);
+    sanitizeObject(req.body as Record<string, unknown>);
   }
 
   next();
