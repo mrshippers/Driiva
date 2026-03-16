@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+**Last updated:** 13 March 2025
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 **For every session in this repo, start with:**
@@ -101,7 +103,7 @@ These invariants are locked. Do not change them without explicit sign-off and a 
 - **Root Platform insurance** — API client in `functions/src/http/insurance.ts`. Needs sandbox credentials (`ROOT_API_KEY`, `ROOT_ENVIRONMENT=sandbox`) before any real-money flow. Until then, `/api/insurance` endpoints will fail.
 - **Stripe** — deps installed (`stripe@18.3`), routes scaffolded in `server/routes.ts`. Not wired end-to-end. No checkout, no webhook handling, no pool contributions connected.
 - **WebAuthn/Passkey** — `server/webauthn.ts` is fully implemented server-side (SimpleWebAuthn). Not wired to any frontend login flow yet.
-- **Staging Firebase project** — alias `driiva-staging` exists in `.firebaserc` but the Firebase project itself has not been provisioned. No staging environment is live today.
+- **Staging Firebase project** — `driiva-staging` provisioned; manual steps remain (Blaze, deploy functions, Vercel staging). Not fully live yet.
 - **Python classifier** — lives in `api/` (FastAPI, port 5000), called via `CLASSIFIER_URL` env var. Not auto-started by `npm run dev`. Must be run separately or deployed to Cloud Run.
 - **XGBoost risk model** — referenced in ROADMAP.md, not yet implemented. `api/main.py` has a mock `score-trip` endpoint.
 - **Phone pickup detection** — scoring weight is 10% but hardcoded to 100. Accelerometer pattern recognition not implemented.
@@ -112,7 +114,7 @@ These invariants are locked. Do not change them without explicit sign-off and a 
 
 | Domain | Where it lives | Owner | Done for next milestone |
 | ---------------------- | -------------------------------------------------------------------------------- | ----------- | ------------------------------------------------ |
-| Product / core | `client/`, `server/`, `functions/`, `shared/`, `api/` | Engineering | Root creds wired; Stripe checkout live |
+| Product / core | `client/`, `server/`, `functions/`, `shared/`, `api/` | Keith Cheng (Product Lead) | Root creds wired; Stripe checkout live |
 | Telematics / AI | `api/main.py`, `functions/src/ai/`, `server/lib/aiInsights.ts` | Engineering | Phone detection wired; XGBoost model behind flag |
 | Marketing / brand | `attached_assets/` (logo PNGs, concept docs) | TBD | Brand kit indexed; owner named |
 | Compliance / GDPR | `client/src/pages/privacy.tsx`, `/terms`, `/trust`; `functions/src/http/gdpr.ts` | Legal + Eng | ICO registered; FCA sandbox ongoing |
