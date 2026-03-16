@@ -3,12 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { ArrowLeft, Bell, Shield, HelpCircle, ChevronRight, Moon, Globe, LogOut, Lock, MessageSquare, ShieldCheck, Plus, Trash2, Loader2 } from 'lucide-react';
 import { PageWrapper } from '../components/PageWrapper';
+import { BottomNav } from '../components/BottomNav';
 import { useAuth } from '../contexts/AuthContext';
 import FeedbackModal from '../components/FeedbackModal';
 import { auth } from '../lib/firebase';
 import {
   checkBiometricSupport,
-  checkHasPasskey,
   registerBiometricCredential,
   getUserCredentials,
   deleteCredential,
@@ -386,6 +386,7 @@ export default function Settings() {
         </div>
       </div>
       <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+      <BottomNav />
     </PageWrapper>
   );
 }

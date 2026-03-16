@@ -170,12 +170,8 @@ export default function TripRecording() {
           });
         }
       }, [toast]),
-      onStart: useCallback(() => {
-        console.log('[TripRecording] Tracking started');
-      }, []),
-      onStop: useCallback((points: TrackedPoint[]) => {
-        console.log('[TripRecording] Tracking stopped, total points:', points.length);
-      }, []),
+      onStart: useCallback(() => {}, []),
+      onStop: useCallback((_points: TrackedPoint[]) => {}, []),
     }
   );
 

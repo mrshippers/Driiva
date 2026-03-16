@@ -123,12 +123,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         sessionStorage.removeItem('driiva-demo-mode');
         sessionStorage.removeItem('driiva-demo-user');
         try {
-          // Reload to pick up latest emailVerified state from Firebase servers
-          await firebaseUser.reload();
-          const refreshedUser = auth!.currentUser!;
+          // Reload to pick up latest emailVerified state from Firebase servers.
+          // 5s timeout — if reload hangs we continue with stale state rather than blocking auth.
+          await Promise.race([
+            firebaseUser.reload(),
+            new Promise<void>((_, reject) => setTimeout(() => reject(new Error('reload timeout')), 5000)),
+          ]).catch(() => {});
+          const refreshedUser = auth!.currentUser ?? firebaseUser;
           const emailVerified = refreshedUser.emailVerified;
 
-          const token = await refreshedUser.getIdToken();
+          // 5s timeout on token fetch — prevents hang on slow/offline connections
+          const token = await Promise.race([
+            refreshedUser.getIdToken(),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('getIdToken timeout')), 5000)),
+          ]);
 
           // Wrap the profile fetch in a 5-second timeout using AbortController.
           // Neon (serverless PostgreSQL) cold-starts can block for 20-27 seconds
