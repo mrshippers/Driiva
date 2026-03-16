@@ -273,28 +273,15 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get("/api/dashboard/:userId", requireAuth, requireResourceOwner("userId"), async (req: AuthRequest, res) => {
     try {
       const userId = req.auth!.userId!;
-      console.log(`Fetching dashboard data for user ${userId}`);
 
       const user = await storage.getUser(userId);
-      console.log(`User found:`, !!user);
-
       const profile = await storage.getDrivingProfile(userId);
-      console.log(`Profile found:`, !!profile);
-
       const recentTrips = await storage.getUserTrips(userId, 5);
-      console.log(`Recent trips count:`, recentTrips?.length || 0);
-
       const pool = await storage.getCommunityPool();
-      console.log(`Community pool found:`, !!pool);
-
       const achievements = await storage.getUserAchievements(userId);
-      console.log(`Achievements count:`, achievements?.length || 0);
-
       const leaderboard = await storage.getLeaderboard('weekly', 10);
-      console.log(`Leaderboard count:`, leaderboard?.length || 0);
 
       if (!user || !profile) {
-        console.log(`Missing data - User: ${!!user}, Profile: ${!!profile}`);
         return res.status(404).json({ message: "User not found" });
       }
 
@@ -305,8 +292,6 @@ export async function registerRoutes(app: Express): Promise<void> {
         Number(poolSafetyFactor),
         Number(user.premiumAmount)
       );
-
-      console.log(`Dashboard data compiled successfully for user ${userId}`);
       res.json({
         user,
         profile: { ...profile, projectedRefund },
@@ -520,7 +505,6 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Report incident (protected: userId set from token)
   app.post("/api/incidents", requireAuth, async (req: AuthRequest, res) => {
     try {
-      console.log("Received incident data:", req.body);
       const incidentData = {
         ...req.body,
         userId: req.auth!.userId,
