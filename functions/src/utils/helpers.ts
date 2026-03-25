@@ -100,28 +100,10 @@ export function truncateAddress(address: string | null): string {
   return firstPart.length > 20 ? firstPart.substring(0, 17) + '...' : firstPart;
 }
 
-/**
- * Calculate distance between two coordinates using Haversine formula
- */
-export function calculateDistance(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number
-): number {
-  const R = 6371e3; // Earth's radius in meters
-  const φ1 = lat1 * Math.PI / 180;
-  const φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lng2 - lng1) * Math.PI / 180;
-
-  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return R * c; // Distance in meters
-}
+// Haversine distance — imported from shared canonical source via lib/haversine.ts
+// Do NOT duplicate this formula. See shared/tripProcessor.ts for the canonical version.
+import { haversineMeters } from '../lib/haversine';
+export { haversineMeters };
 
 /**
  * Check if timestamp is during night hours (10 PM - 6 AM)
@@ -183,7 +165,7 @@ export function detectAnomalies(trip: {
   }
   
   // Check for GPS jumps (straight-line distance much less than route distance)
-  const straightLineDistance = calculateDistance(
+  const straightLineDistance = haversineMeters(
     trip.startLocation.lat,
     trip.startLocation.lng,
     trip.endLocation.lat,
@@ -220,15 +202,21 @@ export function calculateProjectedRefund(
   safetyFactor: number,
   refundRate: number
 ): number {
-  // Base refund rate varies by score (5-15%)
-  const scoreMultiplier = Math.min(1, Math.max(0, (score - 50) / 50)); // 0 at 50, 1 at 100
-  const adjustedRefundRate = 0.05 + (refundRate - 0.05) * scoreMultiplier;
-  
-  // Apply safety factor
-  const baseRefund = contributionCents * adjustedRefundRate;
-  const adjustedRefund = baseRefund * safetyFactor;
-  
-  return Math.round(adjustedRefund);
+  // Use basis-point (bps) integer math to avoid IEEE 754 float errors on money.
+  // 1 bps = 0.01%, so 5% = 500 bps, 15% = 1500 bps.
+  const scoreMultiplier = Math.min(10000, Math.max(0, Math.round(((score - 50) / 50) * 10000))); // 0–10000 bps
+  const minRateBps = 500;  // 5%
+  const refundRateBps = Math.round(refundRate * 10000); // convert decimal to bps
+  const adjustedRateBps = minRateBps + Math.round((refundRateBps - minRateBps) * scoreMultiplier / 10000);
+
+  // Apply rate to contribution (round at each step to avoid compounding float errors)
+  const baseRefundCents = Math.round(contributionCents * adjustedRateBps / 10000);
+
+  // Apply safety factor (also in bps)
+  const safetyFactorBps = Math.round(safetyFactor * 10000);
+  const adjustedRefundCents = Math.round(baseRefundCents * safetyFactorBps / 10000);
+
+  return adjustedRefundCents;
 }
 
 // ============================================================================
@@ -259,7 +247,7 @@ export function computeTripMetrics(
   for (let i = 1; i < sortedPoints.length; i++) {
     const prev = sortedPoints[i - 1];
     const curr = sortedPoints[i];
-    totalDistanceMeters += calculateDistance(prev.lat, prev.lng, curr.lat, curr.lng);
+    totalDistanceMeters += haversineMeters(prev.lat, prev.lng, curr.lat, curr.lng);
   }
 
   // 2. Compute duration from first to last point

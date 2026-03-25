@@ -58,6 +58,8 @@ export { finalizePoolPeriod, recalculatePoolShares } from './scheduled/pool';
 export { sendWeeklySummary } from './scheduled/notifications';
 export { syncDamoovTrips } from './scheduled/damoovSync';
 export { monitorTripHealth } from './scheduled/watchdog';
+export { enforceDataRetention } from './scheduled/retention';
+export { dailyFirestoreBackup } from './scheduled/backup';
 
 // ============================================================================
 // HTTP CALLABLE FUNCTIONS

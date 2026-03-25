@@ -72,10 +72,11 @@ export const finalizePoolPeriod = functions
         totalWeightedScore += share.weightedScore;
       });
       
-      // Calculate available refund pool (after reserve)
-      const reservePercentage = 0.10; // 10% reserve
-      const availablePool = pool.totalPoolCents * (1 - reservePercentage);
-      const refundPool = availablePool * pool.projectedRefundRate;
+      // Calculate available refund pool (after reserve) — integer math to avoid float errors
+      const reserveBps = 1000; // 10% = 1000 bps
+      const availablePoolCents = Math.round(pool.totalPoolCents * (10000 - reserveBps) / 10000);
+      const refundRateBps = Math.round(pool.projectedRefundRate * 10000);
+      const refundPool = Math.round(availablePoolCents * refundRateBps / 10000);
       
       // Batch update all shares
       const batch = db.batch();

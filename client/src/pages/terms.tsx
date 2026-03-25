@@ -121,8 +121,39 @@ export default function Terms() {
             </p>
           </section>
 
+          <section className="mb-5">
+            <h2 className="text-lg font-semibold text-white mb-2">9. Insurance underwriter</h2>
+            <p className="text-white/80 text-sm leading-relaxed mb-2">
+              Driiva is not the insurer. Insurance policies are underwritten by {import.meta.env.VITE_UNDERWRITER_NAME || '[Underwriter to be confirmed — sandbox mode]'}. The underwriter is authorised and regulated by the Financial Conduct Authority.
+            </p>
+            <p className="text-white/80 text-sm leading-relaxed mb-2">
+              Driiva acts as a managing general agent (MGA) facilitating the distribution of insurance products. {import.meta.env.VITE_FCA_REGISTRATION_NUMBER ? `Our FCA registration number is ${import.meta.env.VITE_FCA_REGISTRATION_NUMBER}.` : 'FCA authorisation is pending.'}
+            </p>
+          </section>
+
+          <section className="mb-5">
+            <h2 className="text-lg font-semibold text-white mb-2">10. Cancellation and cooling-off</h2>
+            <p className="text-white/80 text-sm leading-relaxed">
+              You have a 14-day cooling-off period from the start date of your policy during which you may cancel and receive a full refund of any premium paid, less a proportionate charge for any days of cover provided. After the cooling-off period, you may still cancel at any time but charges may apply. See your policy document for full cancellation terms.
+            </p>
+          </section>
+
+          <section className="mb-5">
+            <h2 className="text-lg font-semibold text-white mb-2">11. Complaints</h2>
+            <p className="text-white/80 text-sm leading-relaxed mb-2">
+              If you are unhappy with our service, please contact us at{" "}
+              <a href="mailto:complaints@driiva.co.uk" className="text-teal-400 hover:underline">complaints@driiva.co.uk</a>.
+              We will acknowledge your complaint within 5 business days and aim to resolve it within 8 weeks.
+            </p>
+            <p className="text-white/80 text-sm leading-relaxed">
+              If you remain dissatisfied, you may refer your complaint to the Financial Ombudsman Service (FOS) at{" "}
+              <a href="https://www.financial-ombudsman.org.uk" target="_blank" rel="noopener noreferrer" className="text-teal-400 hover:underline">financial-ombudsman.org.uk</a>{" "}
+              or by calling 0800 023 4567.
+            </p>
+          </section>
+
           <section>
-            <h2 className="text-lg font-semibold text-white mb-2">9. Contact</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">12. Contact</h2>
             <p className="text-white/80 text-sm leading-relaxed">
               Questions? Contact us at{" "}
               <a href="mailto:info@driiva.co.uk" className="text-teal-400 hover:underline">

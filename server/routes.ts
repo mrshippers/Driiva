@@ -31,6 +31,7 @@ import {
   type AuthRequest,
 } from "./middleware/auth";
 import { getStripe, getStripeWebhookSecret, stripeIdempotencyKey } from "./lib/stripe";
+import { safeErrorResponse } from "./lib/errors";
 
 export async function registerRoutes(app: Express): Promise<void> {
   // Verify Firebase JWT on all requests; sets req.auth { uid, email, userId } from token only (never from headers)
@@ -180,8 +181,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const options = await webauthnService.generateRegistrationOptions(email, userAgent);
       res.json(options);
     } catch (error: any) {
-      console.error("WebAuthn registration start error:", error);
-      res.status(400).json({ message: error.message || "Failed to generate registration options" });
+      safeErrorResponse(res, 400, "Failed to generate registration options", error);
     }
   });
 
@@ -197,8 +197,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         res.status(400).json({ message: result.error || "Registration verification failed" });
       }
     } catch (error: any) {
-      console.error("WebAuthn registration complete error:", error);
-      res.status(500).json({ message: error.message || "Registration failed" });
+      safeErrorResponse(res, 500, "Registration failed", error);
     }
   });
 
@@ -209,8 +208,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const options = await webauthnService.generateAuthenticationOptions(email);
       res.json(options);
     } catch (error: any) {
-      console.error("WebAuthn authentication start error:", error);
-      res.status(400).json({ message: error.message || "Failed to generate authentication options" });
+      safeErrorResponse(res, 400, "Failed to generate authentication options", error);
     }
   });
 
@@ -226,8 +224,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         res.status(401).json({ message: result.error || "Authentication failed" });
       }
     } catch (error: any) {
-      console.error("WebAuthn authentication complete error:", error);
-      res.status(500).json({ message: error.message || "Authentication failed" });
+      safeErrorResponse(res, 500, "Authentication failed", error);
     }
   });
 
@@ -301,8 +298,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         leaderboard
       });
     } catch (error: any) {
-      console.error("Dashboard error details:", error);
-      res.status(500).json({ message: "Error fetching dashboard data: " + error.message });
+      safeErrorResponse(res, 500, "Error fetching dashboard data", error);
     }
   });
 
@@ -406,7 +402,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         anomalies: metrics.anomalies
       });
     } catch (error: any) {
-      res.status(500).json({ message: "Error processing trip: " + error.message });
+      safeErrorResponse(res, 500, "Error processing trip", error);
     }
   });
 
@@ -434,7 +430,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const trips = await storage.getUserTrips(userId, limit, offset);
       res.json(trips);
     } catch (error: any) {
-      res.status(500).json({ message: "Error fetching trips: " + error.message });
+      safeErrorResponse(res, 500, "Error fetching trips", error);
     }
   });
 
@@ -452,7 +448,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
       res.json(score);
     } catch (error: any) {
-      res.status(500).json({ message: "Error fetching weekly score: " + error.message });
+      safeErrorResponse(res, 500, "Error fetching weekly score", error);
     }
   });
 
@@ -470,7 +466,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
       res.json(score);
     } catch (error: any) {
-      res.status(500).json({ message: "Error fetching monthly score: " + error.message });
+      safeErrorResponse(res, 500, "Error fetching monthly score", error);
     }
   });
 
@@ -485,7 +481,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const data = await scoreAggregation.getTimeSeriesData(userId, startDate, endDate, granularity);
       res.json(data);
     } catch (error: any) {
-      res.status(500).json({ message: "Error fetching time-series data: " + error.message });
+      safeErrorResponse(res, 500, "Error fetching time-series data", error);
     }
   });
 
@@ -498,7 +494,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const trend = await scoreAggregation.getScoreTrend(userId, period);
       res.json(trend);
     } catch (error: any) {
-      res.status(500).json({ message: "Error fetching score trend: " + error.message });
+      safeErrorResponse(res, 500, "Error fetching score trend", error);
     }
   });
 
@@ -523,7 +519,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           errors: error.errors 
         });
       } else {
-        res.status(500).json({ message: "Error reporting incident: " + error.message });
+        safeErrorResponse(res, 500, "Error reporting incident", error);
       }
     }
   });
@@ -534,7 +530,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const pool = await storage.getCommunityPool();
       res.json(pool);
     } catch (error: any) {
-      res.status(500).json({ message: "Error fetching community pool: " + error.message });
+      safeErrorResponse(res, 500, "Error fetching community pool", error);
     }
   });
 
@@ -545,7 +541,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const pool = await storage.updateCommunityPool(poolData);
       res.json(pool);
     } catch (error: any) {
-      res.status(500).json({ message: "Error updating community pool: " + error.message });
+      safeErrorResponse(res, 500, "Error updating community pool", error);
     }
   });
 
@@ -557,7 +553,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const leaderboard = await storage.getLeaderboard(period, limit);
       res.json(leaderboard);
     } catch (error: any) {
-      res.status(500).json({ message: "Error fetching leaderboard: " + error.message });
+      safeErrorResponse(res, 500, "Error fetching leaderboard", error);
     }
   });
 
@@ -567,7 +563,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const achievements = await storage.getAchievements();
       res.json(achievements);
     } catch (error: any) {
-      res.status(500).json({ message: "Error fetching achievements: " + error.message });
+      safeErrorResponse(res, 500, "Error fetching achievements", error);
     }
   });
 
@@ -578,7 +574,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const achievements = await storage.getUserAchievements(userId);
       res.json(achievements);
     } catch (error: any) {
-      res.status(500).json({ message: "Error fetching user achievements: " + error.message });
+      safeErrorResponse(res, 500, "Error fetching user achievements", error);
     }
   });
 
@@ -589,7 +585,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const refund = telematicsProcessor.calculateRefund(personalScore, poolSafetyFactor, premiumAmount);
       res.json({ refund });
     } catch (error: any) {
-      res.status(500).json({ message: "Error simulating refund: " + error.message });
+      safeErrorResponse(res, 500, "Error simulating refund", error);
     }
   });
 
@@ -616,7 +612,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       res.json(insights);
     } catch (error: any) {
-      res.status(500).json({ message: "Error generating insights: " + error.message });
+      safeErrorResponse(res, 500, "Error generating insights", error);
     }
   });
 
@@ -630,7 +626,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.setHeader("Content-Disposition", `attachment; filename=driiva-data-${userId}.json`);
       res.json(userData);
     } catch (error: any) {
-      res.status(500).json({ message: "Error exporting data: " + error.message });
+      safeErrorResponse(res, 500, "Error exporting data", error);
     }
   });
 
@@ -641,7 +637,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       await storage.deleteUserData(userId);
       res.json({ message: "User data deleted successfully" });
     } catch (error: any) {
-      res.status(500).json({ message: "Error deleting user data: " + error.message });
+      safeErrorResponse(res, 500, "Error deleting user data", error);
     }
   });
 
@@ -770,7 +766,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.json(result);
     } catch (error: any) {
       console.error("[AI Driiva] Error:", error);
-      res.status(500).json({ message: "AI Coach error: " + error.message });
+      safeErrorResponse(res, 500, "AI Coach error", error);
     }
   });
 
@@ -816,7 +812,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       });
     } catch (error: any) {
       console.error("AI backend error:", error);
-      res.status(500).json({ message: "AI backend error: " + error.message });
+      safeErrorResponse(res, 500, "AI backend error", error);
     }
   });
 
@@ -926,8 +922,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       if (error.message?.includes('STRIPE_SECRET_KEY')) {
         return res.status(503).json({ message: "Stripe is not configured on this environment" });
       }
-      console.error("[Stripe] create-subscription error:", error);
-      res.status(500).json({ message: error.message || "Failed to create subscription" });
+      safeErrorResponse(res, 500, "Failed to create subscription", error);
     }
   });
 
@@ -970,8 +965,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       if (error.message?.includes('STRIPE_SECRET_KEY')) {
         return res.status(503).json({ message: "Stripe is not configured on this environment" });
       }
-      console.error("[Stripe] create-checkout error:", error);
-      res.status(500).json({ message: error.message || "Failed to create checkout session" });
+      safeErrorResponse(res, 500, "Failed to create checkout session", error);
     }
   });
 
@@ -998,8 +992,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       if (error.message?.includes('STRIPE_SECRET_KEY')) {
         return res.status(503).json({ message: "Stripe is not configured on this environment" });
       }
-      console.error("[Stripe] billing-portal error:", error);
-      res.status(500).json({ message: error.message || "Failed to create billing portal session" });
+      safeErrorResponse(res, 500, "Failed to create billing portal session", error);
     }
   });
 

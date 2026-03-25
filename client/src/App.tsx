@@ -30,6 +30,7 @@ const PolicyPage = lazy(() => import('./pages/policy'));
 const Terms = lazy(() => import('./pages/terms'));
 const Privacy = lazy(() => import('./pages/privacy'));
 const TrustPage = lazy(() => import('./pages/trust'));
+const IPID = lazy(() => import('./pages/ipid'));
 const Achievements = lazy(() => import('./pages/achievements'));
 const TripDetail = lazy(() => import('./pages/trip-detail'));
 const ForgotPassword = lazy(() => import('./pages/forgot-password'));
@@ -130,6 +131,7 @@ function AppContent() {
           <Route path="/terms" component={Terms} />
           <Route path="/privacy" component={Privacy} />
           <Route path="/trust" component={TrustPage} />
+          <Route path="/ipid" component={IPID} />
 
           {/* Auth routes - redirect to dashboard if already logged in */}
           <Route path="/signin">

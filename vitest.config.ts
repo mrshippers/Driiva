@@ -24,6 +24,11 @@ export default defineConfig({
         'functions/src/utils/**',
         'shared/**',
       ],
+      thresholds: {
+        lines: 70,
+        branches: 65,
+        functions: 70,
+      },
     },
   },
   resolve: {

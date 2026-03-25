@@ -11,6 +11,11 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
       include: ['src/**/*.ts'],
       exclude: ['src/__tests__/**', 'src/types.ts'],
+      thresholds: {
+        lines: 70,
+        branches: 65,
+        functions: 70,
+      },
     },
     setupFiles: ['src/__tests__/setup.ts'],
   },

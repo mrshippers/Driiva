@@ -250,9 +250,69 @@ export default function Privacy() {
                 and we will action the request with Damoov within 30 days.
               </P>
             </SubSection>
-            <SubSection title="5.4 Others">
+            <SubSection title="5.4 Anthropic (AI Analysis)">
               <P>
-                We may use payment providers, cloud hosting, and support tools.
+                Trip data may be analysed by Anthropic's Claude AI service to
+                generate driving insights and coaching feedback. Data is sent
+                via server-side API calls and is not retained by Anthropic
+                beyond the request lifecycle per their data processing terms.
+                This feature is optional and controlled by a feature flag.
+              </P>
+            </SubSection>
+            <SubSection title="5.5 Stripe (Payment Processing)">
+              <P>
+                Premium payments are processed by Stripe, Inc., a PCI DSS
+                Level 1 certified payment processor. Driiva does not store
+                your full card details. Stripe's privacy policy is available at{" "}
+                <a
+                  href="https://stripe.com/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-teal-400 hover:underline"
+                >
+                  stripe.com/privacy
+                </a>
+                .
+              </P>
+            </SubSection>
+            <SubSection title="5.6 Vercel (Hosting)">
+              <P>
+                Our web application and API are hosted on Vercel's edge
+                network. Vercel processes request metadata (IP addresses,
+                headers) as part of serving the application. Vercel's privacy
+                policy is available at{" "}
+                <a
+                  href="https://vercel.com/legal/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-teal-400 hover:underline"
+                >
+                  vercel.com/legal/privacy-policy
+                </a>
+                .
+              </P>
+            </SubSection>
+            <SubSection title="5.7 Sentry (Error Monitoring)">
+              <P>
+                We use Sentry for application error monitoring to maintain
+                service reliability. Sentry may receive technical error data
+                including anonymised request metadata. Personal identifiers are
+                scrubbed before transmission. Sentry's privacy policy is
+                available at{" "}
+                <a
+                  href="https://sentry.io/privacy/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-teal-400 hover:underline"
+                >
+                  sentry.io/privacy
+                </a>
+                .
+              </P>
+            </SubSection>
+            <SubSection title="5.8 Others">
+              <P>
+                We may use additional support tools and service providers.
                 All processors are bound by contract to use data only for the
                 purposes we specify and to protect it appropriately.
               </P>

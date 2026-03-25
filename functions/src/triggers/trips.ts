@@ -432,7 +432,26 @@ async function finalizeTripFromPoints(
     functions.logger.info(`Trip ${tripId} finalized with status: ${finalStatus}`, {
       flaggedForReview: anomalies.flaggedForReview,
     });
-    
+
+    // 6b. Encrypt raw GPS points at rest and set data retention expiry
+    const { getEncryptionKey, encryptData } = await import('../lib/crypto');
+    const encryptionKey = getEncryptionKey();
+    const pointsRef = db.collection(COLLECTION_NAMES.TRIP_POINTS).doc(tripId);
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 90); // 90-day retention per privacy policy
+    const pointsUpdate: Record<string, any> = {
+      expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
+    };
+    if (encryptionKey) {
+      pointsUpdate.encryptedPoints = encryptData(JSON.stringify(points), encryptionKey);
+      pointsUpdate.points = admin.firestore.FieldValue.delete(); // Remove cleartext
+      pointsUpdate.encrypted = true;
+      functions.logger.info(`[security] Trip ${tripId} GPS points encrypted at rest`);
+    }
+    await pointsRef.update(pointsUpdate).catch((err: any) =>
+      functions.logger.warn(`[security] Failed to encrypt/set expiry for trip ${tripId}:`, err)
+    );
+
     // 7. If completed (no anomalies), update driver profile.
     // Classification and AI analysis are NOT triggered here — they fire in
     // onTripStatusChange (processing → completed) which runs when this update

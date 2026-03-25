@@ -138,7 +138,8 @@ export default function PolicyDownload({ userId, userData, policyNumber }: Polic
     <div class="terms">
         <p><strong>Important:</strong> This policy is subject to terms and conditions. Please refer to your full policy documentation for complete details. Generated on ${new Date().toLocaleDateString()}.</p>
         <p>*Refund projections are illustrative. Actual amounts depend on pool performance, claims experience, and underwriting criteria. Past performance is not a guarantee of future refunds.</p>
-        <p>Driiva Ltd. Authorised and regulated by the Financial Conduct Authority. Registration number: DRV123456.</p>
+        <p>${import.meta.env.VITE_FCA_REGISTRATION_NUMBER ? `Driiva Ltd. Authorised and regulated by the Financial Conduct Authority. Registration number: ${import.meta.env.VITE_FCA_REGISTRATION_NUMBER}.` : 'FCA authorisation pending — this document is for illustrative purposes only. Not a regulated insurance document. Driiva Ltd.'}</p>
+        <p>Please also refer to our <a href="https://app.driiva.co.uk/ipid">Insurance Product Information Document (IPID)</a> for a standardised summary of coverage.</p>
     </div>
 </body>
 </html>`;

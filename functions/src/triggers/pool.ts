@@ -60,7 +60,7 @@ export const onPoolShareWrite = functions
       const poolShareSummary: PoolShareSummary = {
         currentShareCents: share.projectedRefundCents,
         contributionCents: share.contributionCents,
-        sharePercentage: Math.round(share.sharePercentage * 100) / 100, // 2 decimal places
+        sharePercentage: Math.round(share.sharePercentage * 10000) / 10000, // 4 decimal places — matches poolShares canonical precision
         lastUpdatedAt: share.updatedAt ?? admin.firestore.Timestamp.now(),
       };
       

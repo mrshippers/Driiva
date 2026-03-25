@@ -349,7 +349,7 @@ export const addPoolContribution = functions
       // Update user's denormalized pool share
       transaction.update(userRef, {
         'poolShare.contributionCents': newContributionCents,
-        'poolShare.sharePercentage': Math.round(newSharePercentage * 100) / 100,
+        'poolShare.sharePercentage': Math.round(newSharePercentage * 10000) / 10000,
         'poolShare.lastUpdatedAt': now,
         updatedAt: now,
         updatedBy: 'cloud-function',
@@ -357,7 +357,7 @@ export const addPoolContribution = functions
       
       return {
         newContributionCents,
-        sharePercentage: Math.round(newSharePercentage * 100) / 100,
+        sharePercentage: Math.round(newSharePercentage * 10000) / 10000,
       };
     });
     
