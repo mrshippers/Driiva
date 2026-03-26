@@ -57,10 +57,16 @@ export async function verifyFirebaseAuth(
   }
 
   const user = await storage.getUserByFirebaseUid(decoded.uid);
+  if (!user) {
+    // Firebase token is valid but no matching DB record — treat as unauthenticated.
+    // requireAuth will return 401; avoids userId=0 matching real rows.
+    next();
+    return;
+  }
   req.auth = {
     uid: decoded.uid,
     email: decoded.email,
-    userId: user?.id ?? 0,
+    userId: user.id,
   };
   next();
 }

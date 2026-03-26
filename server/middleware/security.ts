@@ -1,35 +1,45 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 
+// Strip IPv4-mapped IPv6 prefix (::ffff:1.2.3.4 → 1.2.3.4) so that
+// express-rate-limit counts them as the same key. Without this, an attacker
+// can bypass rate limits by alternating between IPv4 and IPv4-mapped IPv6.
+const normalizeIp = (req: express.Request): string =>
+  (req.ip ?? 'unknown').replace(/^::ffff:/, '');
+
 // Rate limiting configuration
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit to 5 requests
+  max: 5,
   message: 'Too many authentication attempts, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: normalizeIp,
 });
 
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit to 100 requests
+  max: 100,
   message: 'Too many requests from this IP, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: normalizeIp,
 });
 
 // Webhook limiter for Stripe
 export const webhookLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 10, // limit to 10 requests
+  max: 10,
   skipSuccessfulRequests: true,
+  keyGenerator: normalizeIp,
 });
 
 // General API limiter for trip data
 export const tripDataLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 30, // limit to 30 requests
+  max: 30,
   message: 'Too many trip data requests',
+  keyGenerator: normalizeIp,
 });
 
 // Enhanced security headers
@@ -74,16 +84,16 @@ export const sanitizeInput = (req: express.Request, res: express.Response, next:
 
   // Sanitize body parameters
   if (req.body && typeof req.body === 'object') {
-    const sanitizeObject = (obj: any): any => {
+    const sanitizeObject = (obj: Record<string, unknown>): void => {
       Object.keys(obj).forEach(key => {
         if (typeof obj[key] === 'string') {
-          obj[key] = obj[key].trim().replace(/[<>]/g, '');
+          obj[key] = (obj[key] as string).trim().replace(/[<>]/g, '');
         } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-          sanitizeObject(obj[key]);
+          sanitizeObject(obj[key] as Record<string, unknown>);
         }
       });
     };
-    sanitizeObject(req.body);
+    sanitizeObject(req.body as Record<string, unknown>);
   }
 
   next();
