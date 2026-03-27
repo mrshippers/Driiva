@@ -805,6 +805,20 @@ async function trackAPIUsage(
     };
 
     await db.collection(COLLECTION_NAMES.AI_USAGE_TRACKING).add(usageDoc);
+
+    functions.logger.info('[metric] ai_analysis', {
+      metric: 'ai_analysis',
+      tripId,
+      userId,
+      success,
+      latencyMs,
+      promptTokens,
+      completionTokens,
+      totalTokens,
+      estimatedCostCents,
+      model: CLAUDE_MODEL,
+      error,
+    });
   } catch (trackingError) {
     // Don't let tracking failure break the analysis pipeline
     functions.logger.warn('[AI] Failed to track API usage:', trackingError);

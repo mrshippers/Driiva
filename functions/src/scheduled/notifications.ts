@@ -9,6 +9,7 @@ import * as admin from 'firebase-admin';
 import { COLLECTION_NAMES, UserDocument } from '../types';
 import { sendWeeklySummaryToUser } from '../utils/notifications';
 import { EUROPE_LONDON } from '../lib/region';
+import { wrapTrigger } from '../lib/sentry';
 
 const db = admin.firestore();
 
@@ -20,7 +21,7 @@ export const sendWeeklySummary = functions
   .region(EUROPE_LONDON)
   .pubsub.schedule('0 9 * * 1') // Every Monday 9 AM
   .timeZone('Europe/London')
-  .onRun(async () => {
+  .onRun(wrapTrigger(async () => {
     functions.logger.info('[WeeklySummary] Starting weekly summary notifications');
 
     try {
@@ -59,4 +60,4 @@ export const sendWeeklySummary = functions
       functions.logger.error('[WeeklySummary] Fatal error:', err);
       throw err;
     }
-  });
+  }));

@@ -15,6 +15,7 @@ import {
 } from '../types';
 import { getCurrentPeriodForType, getWeekNumber } from '../utils/helpers';
 import { EUROPE_LONDON } from '../lib/region';
+import { wrapTrigger } from '../lib/sentry';
 
 const db = admin.firestore();
 
@@ -28,7 +29,7 @@ export const updateLeaderboards = functions
   .region(EUROPE_LONDON)
   .pubsub
   .schedule('every 15 minutes')
-  .onRun(async (_context) => {
+  .onRun(wrapTrigger(async (_context) => {
     functions.logger.info('Starting leaderboard update');
     
     try {
@@ -43,7 +44,7 @@ export const updateLeaderboards = functions
       functions.logger.error('Error updating leaderboards:', error);
       throw error;
     }
-  });
+  }));
 
 /**
  * Calculate and store leaderboard for a specific period type.

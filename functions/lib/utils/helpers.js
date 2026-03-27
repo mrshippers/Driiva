@@ -334,6 +334,17 @@ function detectDrivingEvents(points) {
     return events;
 }
 /**
+ * Compute phone usage score from pickup count and trip duration.
+ * Rate = pickups per 10 minutes; score = max(20, 100 − rate × 16).
+ * 0 pickups → 100 | 1/10 min → 84 | 5+/10 min → 20 (floor)
+ */
+function computePhoneUsageScore(phonePickupCount, durationSeconds) {
+    if (durationSeconds <= 0 || phonePickupCount <= 0)
+        return 100;
+    const pickupsPerTenMin = (phonePickupCount / durationSeconds) * 600;
+    return Math.max(20, Math.round(100 - pickupsPerTenMin * 16));
+}
+/**
  * Normalize heading delta to -180 to 180 range
  */
 function normalizeHeadingDelta(delta) {
@@ -377,8 +388,8 @@ function computeDrivingScore(points, events, speedVariance, avgSpeedMps, distanc
     const turnPenalty = Math.min(50, turnEventsPerMile * 6);
     const corneringScore = Math.max(0, Math.min(100, 100 - turnPenalty));
     // Phone Usage Score (10%)
-    // Placeholder - always 100 until phone detection is implemented
-    const phoneUsageScore = 100;
+    // Rate-based: penalise app switches during the trip
+    const phoneUsageScore = computePhoneUsageScore(events.phonePickupCount, durationSeconds);
     // Calculate weighted composite score
     const score = Math.round(speedScore * 0.25 +
         brakingScore * 0.25 +

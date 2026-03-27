@@ -1,9 +1,10 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 
-// Strip IPv4-mapped IPv6 prefix (::ffff:1.2.3.4 → 1.2.3.4) so that
-// express-rate-limit counts them as the same key. Without this, an attacker
-// can bypass rate limits by alternating between IPv4 and IPv4-mapped IPv6.
+/**
+ * Normalize key for rate limiting: strip IPv4-mapped IPv6 prefix (::ffff:)
+ * so ::ffff:1.2.3.4 and 1.2.3.4 are treated as the same client.
+ */
 const normalizeIp = (req: express.Request): string =>
   (req.ip ?? 'unknown').replace(/^::ffff:/, '');
 
@@ -85,13 +86,13 @@ export const sanitizeInput = (req: express.Request, res: express.Response, next:
   // Sanitize body parameters
   if (req.body && typeof req.body === 'object') {
     const sanitizeObject = (obj: Record<string, unknown>): void => {
-      Object.keys(obj).forEach(key => {
+      for (const key of Object.keys(obj)) {
         if (typeof obj[key] === 'string') {
           obj[key] = (obj[key] as string).trim().replace(/[<>]/g, '');
-        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+        } else if (obj[key] !== null && typeof obj[key] === 'object') {
           sanitizeObject(obj[key] as Record<string, unknown>);
         }
-      });
+      }
     };
     sanitizeObject(req.body as Record<string, unknown>);
   }

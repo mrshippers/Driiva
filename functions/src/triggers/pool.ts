@@ -12,6 +12,7 @@ import {
   PoolShareSummary,
 } from '../types';
 import { EUROPE_LONDON } from '../lib/region';
+import { wrapTrigger } from '../lib/sentry';
 
 const db = admin.firestore();
 
@@ -23,7 +24,7 @@ export const onPoolShareWrite = functions
   .region(EUROPE_LONDON)
   .firestore
   .document(`${COLLECTION_NAMES.POOL_SHARES}/{shareId}`)
-  .onWrite(async (change, context) => {
+  .onWrite(wrapTrigger(async (change, context) => {
     const shareId = context.params.shareId;
     
     // Handle deletion
@@ -78,4 +79,4 @@ export const onPoolShareWrite = functions
       functions.logger.error(`Error syncing pool share ${shareId}:`, error);
       throw error;
     }
-  });
+  }));

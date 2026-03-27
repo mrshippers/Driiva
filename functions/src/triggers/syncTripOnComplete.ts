@@ -9,13 +9,14 @@ import * as functions from 'firebase-functions';
 import { COLLECTION_NAMES, TripDocument } from '../types';
 import { getPgUserIdByFirebaseUid, insertTripSummary } from '../lib/neon';
 import { EUROPE_LONDON } from '../lib/region';
+import { wrapTrigger } from '../lib/sentry';
 
 export const syncTripOnComplete = functions
   .region(EUROPE_LONDON)
   .runWith({ secrets: ['DATABASE_URL'] })
   .firestore
   .document(`${COLLECTION_NAMES.TRIPS}/{tripId}`)
-  .onUpdate(async (change, context) => {
+  .onUpdate(wrapTrigger(async (change, context) => {
     const before = change.before.data() as TripDocument;
     const after = change.after.data() as TripDocument;
     if (before.status === after.status || after.status !== 'completed') {
@@ -60,4 +61,4 @@ export const syncTripOnComplete = functions
       functions.logger.error('Failed to sync trip to PostgreSQL', { tripId, error });
       throw error;
     }
-  });
+  }));

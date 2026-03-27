@@ -44,6 +44,7 @@ const admin = __importStar(require("firebase-admin"));
 const types_1 = require("../types");
 const helpers_1 = require("../utils/helpers");
 const region_1 = require("../lib/region");
+const sentry_1 = require("../lib/sentry");
 const db = admin.firestore();
 /**
  * Finalize pool period on the 1st of each month
@@ -56,7 +57,7 @@ exports.finalizePoolPeriod = functions
     .pubsub
     .schedule('0 0 1 * *') // 1st of each month at midnight UTC
     .timeZone('America/New_York')
-    .onRun(async (_context) => {
+    .onRun((0, sentry_1.wrapTrigger)(async (_context) => {
     const previousPeriod = (0, helpers_1.getPreviousPoolPeriod)();
     functions.logger.info(`Finalizing pool period: ${previousPeriod}`);
     try {
@@ -147,7 +148,7 @@ exports.finalizePoolPeriod = functions
         functions.logger.error(`Error finalizing pool period ${previousPeriod}:`, error);
         throw error;
     }
-});
+}));
 /**
  * Recalculate pool share projections daily
  * Updates projected refund amounts based on current pool state
@@ -157,7 +158,7 @@ exports.recalculatePoolShares = functions
     .pubsub
     .schedule('0 6 * * *') // Daily at 6 AM UTC
     .timeZone('America/New_York')
-    .onRun(async (_context) => {
+    .onRun((0, sentry_1.wrapTrigger)(async (_context) => {
     const currentPeriod = (0, helpers_1.getCurrentPoolPeriod)();
     functions.logger.info(`Recalculating pool shares for period: ${currentPeriod}`);
     try {
@@ -229,7 +230,7 @@ exports.recalculatePoolShares = functions
         functions.logger.error(`Error recalculating pool shares:`, error);
         throw error;
     }
-});
+}));
 /**
  * Get pool period date range
  */

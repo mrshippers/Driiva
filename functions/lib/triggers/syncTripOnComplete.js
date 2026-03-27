@@ -44,12 +44,13 @@ const functions = __importStar(require("firebase-functions"));
 const types_1 = require("../types");
 const neon_1 = require("../lib/neon");
 const region_1 = require("../lib/region");
+const sentry_1 = require("../lib/sentry");
 exports.syncTripOnComplete = functions
     .region(region_1.EUROPE_LONDON)
     .runWith({ secrets: ['DATABASE_URL'] })
     .firestore
     .document(`${types_1.COLLECTION_NAMES.TRIPS}/{tripId}`)
-    .onUpdate(async (change, context) => {
+    .onUpdate((0, sentry_1.wrapTrigger)(async (change, context) => {
     const before = change.before.data();
     const after = change.after.data();
     if (before.status === after.status || after.status !== 'completed') {
@@ -95,5 +96,5 @@ exports.syncTripOnComplete = functions
         functions.logger.error('Failed to sync trip to PostgreSQL', { tripId, error });
         throw error;
     }
-});
+}));
 //# sourceMappingURL=syncTripOnComplete.js.map

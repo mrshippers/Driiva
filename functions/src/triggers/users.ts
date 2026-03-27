@@ -17,6 +17,7 @@ import {
 } from '../types';
 import { EUROPE_LONDON } from '../lib/region';
 import { createDamoovUser } from '../lib/damoov';
+import { wrapTrigger } from '../lib/sentry';
 
 const db = admin.firestore();
 
@@ -47,7 +48,7 @@ export const onUserCreate = functions
   .region(EUROPE_LONDON)
   .firestore
   .document(`${COLLECTION_NAMES.USERS}/{userId}`)
-  .onCreate(async (snap, context) => {
+  .onCreate(wrapTrigger(async (snap, context) => {
     const userId = context.params.userId;
     const userData = snap.data();
     const email = (userData?.email as string | undefined) || '';
@@ -63,8 +64,7 @@ export const onUserCreate = functions
       const isAdminEmail = ADMIN_EMAILS.length > 0 && ADMIN_EMAILS.includes(email.toLowerCase());
 
       if (isAdminEmail) {
-        const reason = 'ADMIN_EMAILS allowlist';
-        functions.logger.info(`Auto-promoting ${userId} (${email}) to admin — reason: ${reason}`);
+        functions.logger.info(`Auto-promoting ${userId} (${email}) to admin — reason: ADMIN_EMAILS allowlist`);
         await snap.ref.update({
           isAdmin: true,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -197,7 +197,7 @@ export const onUserCreate = functions
       // Don't throw - user creation should not fail because of policy creation
       // The policy can be created manually or on retry
     }
-  });
+  }));
 
 /**
  * Generate a unique policy number in format DRV-001, DRV-002, etc.

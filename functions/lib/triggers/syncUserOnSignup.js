@@ -43,10 +43,11 @@ exports.syncUserOnSignup = void 0;
 const functions = __importStar(require("firebase-functions"));
 const neon_1 = require("../lib/neon");
 const region_1 = require("../lib/region");
+const sentry_1 = require("../lib/sentry");
 exports.syncUserOnSignup = functions
     .region(region_1.EUROPE_LONDON)
     .runWith({ secrets: ['DATABASE_URL'] })
-    .auth.user().onCreate(async (user) => {
+    .auth.user().onCreate((0, sentry_1.wrapTrigger)(async (user) => {
     const { uid, email, displayName } = user;
     const emailStr = email ?? '';
     if (!emailStr) {
@@ -61,5 +62,5 @@ exports.syncUserOnSignup = functions
         functions.logger.error('Failed to sync user to PostgreSQL', { uid, error });
         throw error;
     }
-});
+}));
 //# sourceMappingURL=syncUserOnSignup.js.map

@@ -46,6 +46,7 @@ const index_1 = require("../index");
 const types_1 = require("../types");
 const betaEstimateService_1 = require("../lib/betaEstimateService");
 const region_1 = require("../lib/region");
+const sentry_1 = require("../lib/sentry");
 const Timestamp = admin.firestore.Timestamp;
 const FieldValue = admin.firestore.FieldValue;
 const BETA_PRICING_SUBCOLLECTION = 'betaPricing';
@@ -72,7 +73,7 @@ async function getCommunityPoolSafety() {
  */
 exports.calculateBetaEstimateForUser = functions
     .region(region_1.EUROPE_LONDON)
-    .https.onCall(async (data, context) => {
+    .https.onCall((0, sentry_1.wrapFunction)(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Must be signed in');
     }
@@ -126,7 +127,7 @@ exports.calculateBetaEstimateForUser = functions
         success: true,
         estimate: result,
     };
-});
+}));
 /**
  * When user profile (or pool) changes, recompute beta estimate and upsert.
  * Runs on user document update so estimate stays in sync with score, age, postcode.
@@ -135,7 +136,7 @@ exports.onUserUpdateRecalcBetaEstimate = functions
     .region(region_1.EUROPE_LONDON)
     .firestore
     .document(`${types_1.COLLECTION_NAMES.USERS}/{userId}`)
-    .onUpdate(async (change, context) => {
+    .onUpdate((0, sentry_1.wrapTrigger)(async (change, context) => {
     const userId = context.params.userId;
     const after = change.after.data();
     const personalScore = after.drivingProfile?.currentScore ?? 0;
@@ -171,5 +172,5 @@ exports.onUserUpdateRecalcBetaEstimate = functions
         userId,
         estimatedPremium: result.estimatedPremium,
     });
-});
+}));
 //# sourceMappingURL=betaEstimate.js.map

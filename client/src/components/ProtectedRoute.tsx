@@ -1,6 +1,7 @@
 import React, { useLayoutEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
+import BrandedLoader from '@/components/BrandedLoader';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -16,7 +17,7 @@ interface ProtectedRouteProps {
  * Guards routes that require authentication.
  *
  * Flow:
- *   1. AuthContext loading → spinner
+ *   1. AuthContext loading → branded loader (no white flash, no premature redirects)
  *   2. Demo mode → allow immediately
  *   3. No user → redirect to /signin
  *   4. Email not verified (unless skipEmailVerificationCheck) → redirect to /verify-email
@@ -68,43 +69,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
   }, [loading, user, isDemoMode, shouldEnforceOnboarding, shouldEnforceEmailVerification, setLocation]);
 
-  // AuthProvider still bootstrapping
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-10 h-10 border-3 border-white/20 border-t-white rounded-full animate-spin" />
-      </div>
-    );
-  }
+  // AuthProvider still bootstrapping — show branded loader to prevent white flash
+  // and ensure emailVerified is fresh (reload() completes before loading=false)
+  if (loading) return <BrandedLoader />;
 
   if (isDemoMode) return <>{children}</>;
 
-  // Not authenticated → spinner while redirect fires
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-10 h-10 border-3 border-white/20 border-t-white rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  // Email not verified → spinner while redirect fires
-  if (shouldEnforceEmailVerification && user.emailVerified === false) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-10 h-10 border-3 border-white/20 border-t-white rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  // Onboarding not completed → spinner while redirect fires
-  if (shouldEnforceOnboarding && user.onboardingComplete !== true) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-10 h-10 border-3 border-white/20 border-t-white rounded-full animate-spin" />
-      </div>
-    );
-  }
+  // Not authenticated / email unverified / onboarding incomplete → branded loader
+  // while the useLayoutEffect redirect fires (avoids blank/white flash)
+  if (!user) return <BrandedLoader />;
+  if (shouldEnforceEmailVerification && user.emailVerified === false) return <BrandedLoader />;
+  if (shouldEnforceOnboarding && user.onboardingComplete !== true) return <BrandedLoader />;
 
   return <>{children}</>;
 };
@@ -119,12 +94,10 @@ interface PublicOnlyRouteProps {
  * =================
  * Redirects authenticated users away from auth pages (signin, signup).
  * Demo mode does NOT count — users should be able to create real accounts from demo.
- *
- * PERFORMANCE FIX (v2): useLayoutEffect for zero-flicker redirects.
  */
-export const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({ 
-  children, 
-  redirectTo = '/dashboard' 
+export const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({
+  children,
+  redirectTo = '/dashboard'
 }) => {
   const [, setLocation] = useLocation();
   const { user, loading } = useAuth();
@@ -145,15 +118,8 @@ export const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({
   // Demo mode — always show auth pages (so user can create real account)
   if (isDemoMode) return <>{children}</>;
 
-  // Authenticated real user — show spinner while redirect fires in useLayoutEffect
-  // (null caused a blank-page flash identical to the ProtectedRoute case)
-  if (user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-10 h-10 border-3 border-white/20 border-t-white rounded-full animate-spin" />
-      </div>
-    );
-  }
+  // Authenticated real user — branded loader while redirect fires
+  if (user) return <BrandedLoader />;
 
   return <>{children}</>;
 };

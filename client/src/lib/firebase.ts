@@ -29,6 +29,7 @@ import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, GoogleAuthProvider, connectAuthEmulator } from 'firebase/auth';
 import { initializeFirestore, Firestore, persistentLocalCache, persistentMultipleTabManager, connectFirestoreEmulator } from 'firebase/firestore';
 import { getAnalytics, Analytics } from 'firebase/analytics';
+import { getPerformance, FirebasePerformance } from 'firebase/performance';
 
 // ---------------------------------------------------------------------------
 // 1. Read environment variables
@@ -132,6 +133,7 @@ let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
 let analytics: Analytics | null = null;
+let perf: FirebasePerformance | null = null;
 
 if (isFirebaseConfigured) {
   try {
@@ -153,6 +155,15 @@ if (isFirebaseConfigured) {
       }
     }
 
+    // Performance Monitoring (only in browser production — not in Node/SSR)
+    if (typeof window !== 'undefined' && envMeasurementId) {
+      try {
+        perf = getPerformance(app);
+      } catch (perfErr) {
+        console.warn('Firebase Performance could not be initialized:', perfErr);
+      }
+    }
+
     console.log(`✓ Firebase initialized — project="${projectId}"`);
   } catch (error) {
     console.error('❌ Firebase initialization failed:', error);
@@ -167,5 +178,5 @@ if (isFirebaseConfigured) {
 // Google Auth provider — pre-configured, ready for signInWithPopup
 const googleProvider = isFirebaseConfigured ? new GoogleAuthProvider() : null;
 
-export { auth, db, googleProvider, analytics };
+export { auth, db, googleProvider, analytics, perf };
 export default app;

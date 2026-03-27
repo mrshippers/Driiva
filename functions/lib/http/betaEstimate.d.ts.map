@@ -1,1 +1,1 @@
-{"version":3,"file":"betaEstimate.d.ts","sourceRoot":"","sources":["../../src/http/betaEstimate.ts"],"names":[],"mappings":"AAAA;;;;;GAKG;AAEH,OAAO,KAAK,SAAS,MAAM,oBAAoB,CAAC;AAkChD;;;GAGG;AACH,eAAO,MAAM,4BAA4B,mDAwExC,CAAC;AAEF;;;GAGG;AACH,eAAO,MAAM,8BAA8B,sFAiDvC,CAAC"}
+{"version":3,"file":"betaEstimate.d.ts","sourceRoot":"","sources":["../../src/http/betaEstimate.ts"],"names":[],"mappings":"AAAA;;;;;GAKG;AAEH,OAAO,KAAK,SAAS,MAAM,oBAAoB,CAAC;AAmChD;;;GAGG;AACH,eAAO,MAAM,4BAA4B,mDAwEvC,CAAC;AAEH;;;GAGG;AACH,eAAO,MAAM,8BAA8B,sFAiDtC,CAAC"}

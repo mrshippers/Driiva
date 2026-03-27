@@ -23,6 +23,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { COLLECTION_NAMES, UserDocument, PolicyDocument, CoverageType } from '../types';
 import { EUROPE_LONDON } from '../lib/region';
+import { wrapFunction } from '../lib/sentry';
 
 // ============================================================================
 // CONFIG
@@ -227,7 +228,7 @@ async function ensurePolicyholder(
  */
 export const getInsuranceQuote = functions
   .region(EUROPE_LONDON)
-  .https.onCall(async (data, context) => {
+  .https.onCall(wrapFunction(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Must be signed in');
   }
@@ -303,7 +304,7 @@ export const getInsuranceQuote = functions
       Math.max(0, Math.min(30, (profile.currentScore - 50) * 0.6)),
     ),
   };
-});
+}));
 
 /**
  * Accept a quote and bind a policy via Root Platform.
@@ -313,7 +314,7 @@ export const getInsuranceQuote = functions
  */
 export const acceptInsuranceQuote = functions
   .region(EUROPE_LONDON)
-  .https.onCall(async (data, context) => {
+  .https.onCall(wrapFunction(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Must be signed in');
   }
@@ -431,7 +432,7 @@ export const acceptInsuranceQuote = functions
     startDate: rootPolicy.start_date,
     endDate: rootPolicy.end_date,
   };
-});
+}));
 
 /**
  * Fetch the user's current policy status from Root Platform.
@@ -441,7 +442,7 @@ export const acceptInsuranceQuote = functions
  */
 export const syncInsurancePolicy = functions
   .region(EUROPE_LONDON)
-  .https.onCall(async (data, context) => {
+  .https.onCall(wrapFunction(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Must be signed in');
   }
@@ -489,4 +490,4 @@ export const syncInsurancePolicy = functions
     startDate: rootPolicy.start_date,
     endDate: rootPolicy.end_date,
   };
-});
+}));

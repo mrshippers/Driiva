@@ -1,0 +1,83 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: claude-sonnet-4-20250514
+          timeout_minutes: 10
+          direct_prompt: |
+            Review this PR diff against the Driiva code review checklist below.
+
+            For each issue found, leave a specific inline comment on the relevant line.
+            Only flag real problems — don't leave comments just to show you checked something.
+            Be concise: one sentence per comment, with a fix suggestion where possible.
+
+            At the end, post a summary comment on the PR with:
+            - A pass/fail verdict
+            - Any blocking issues (prefix with ⚠️)
+            - Any non-blocking suggestions (prefix with 💡)
+
+            CHECKLIST TO REVIEW AGAINST:
+
+            **Correctness**
+            - Code does what the PR description says
+            - Edge cases handled (null/undefined, empty arrays, missing fields)
+            - Error paths handled and don't silently fail
+            - Async/await correct — no unhandled rejections
+            - TypeScript types accurate — no `any` or unsafe casts
+            **Next.js**
+            - Server vs Client Components split correctly
+            - No waterfall data fetches that could be parallel
+            - API routes validate method, body, and query params
+            - NEXT_PUBLIC_ prefix only on browser-safe values
+
+            **Firebase**
+            - Correct Firestore collection paths and document refs
+            - Admin SDK server-side only — not in client bundles
+            - Client SDK initialised once, not per-component
+            - Cloud Functions handle cold starts
+            - Firestore listeners cleaned up on unmount
+
+            **Stripe**
+            - Webhooks verify signature before processing
+            - Idempotency keys used for create/update operations
+            - Payment flows handle all terminal states
+            - Stripe IDs from config/env, not hardcoded
+
+            **Security (BLOCKING)**
+            - No secrets, API keys, or tokens committed
+            - Firestore rules updated if data access patterns changed
+            - Stripe secret key server-side only
+            - User input validated before Firestore writes
+            - Firebase Auth tokens verified server-side
+            - No PII or payment info in logs
+            **Performance (BLOCKING)**
+            - No unbounded Firestore queries
+            - No N+1 patterns — batch reads, not loops
+            - Firestore writes batched where possible
+            - Pages that can be static are statically generated
+            - useEffect dependencies correct — no infinite re-renders
+            - Bundle size impact considered for new dependencies
+
+            **Test Coverage (BLOCKING)**
+            - New functionality has tests (happy path + failure case)
+            - Firestore interactions tested with emulator or mocked
+            - Stripe webhook handlers tested
+            - API routes tested for valid input, invalid input, and auth failures
+            - No .skip or .only left from debugging

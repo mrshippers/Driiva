@@ -1,1 +1,1 @@
-{"version":3,"file":"trips.d.ts","sourceRoot":"","sources":["../../src/triggers/trips.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,OAAO,KAAK,SAAS,MAAM,oBAAoB,CAAC;AA6KhD;;;;;GAKG;AACH,eAAO,MAAM,YAAY,oEA2ErB,CAAC;AAEL;;;;;GAKG;AACH,eAAO,MAAM,kBAAkB,sFAgE3B,CAAC"}
+{"version":3,"file":"trips.d.ts","sourceRoot":"","sources":["../../src/triggers/trips.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,OAAO,KAAK,SAAS,MAAM,oBAAoB,CAAC;AA+KhD;;;;;GAKG;AACH,eAAO,MAAM,YAAY,oEA2EpB,CAAC;AAEN;;;;;GAKG;AACH,eAAO,MAAM,kBAAkB,sFAgE1B,CAAC"}

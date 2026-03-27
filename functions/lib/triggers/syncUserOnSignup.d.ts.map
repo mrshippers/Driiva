@@ -1,1 +1,1 @@
-{"version":3,"file":"syncUserOnSignup.d.ts","sourceRoot":"","sources":["../../src/triggers/syncUserOnSignup.ts"],"names":[],"mappings":"AAAA;;;;;GAKG;AAEH,OAAO,KAAK,SAAS,MAAM,oBAAoB,CAAC;AAIhD,eAAO,MAAM,gBAAgB,mEAiB3B,CAAC"}
+{"version":3,"file":"syncUserOnSignup.d.ts","sourceRoot":"","sources":["../../src/triggers/syncUserOnSignup.ts"],"names":[],"mappings":"AAAA;;;;;GAKG;AAEH,OAAO,KAAK,SAAS,MAAM,oBAAoB,CAAC;AAKhD,eAAO,MAAM,gBAAgB,mEAiB1B,CAAC"}

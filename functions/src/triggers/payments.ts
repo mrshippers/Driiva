@@ -27,6 +27,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { COLLECTION_NAMES, UserDocument } from '../types';
 import { EUROPE_LONDON } from '../lib/region';
+import { wrapTrigger } from '../lib/sentry';
 
 const db = admin.firestore();
 
@@ -51,7 +52,7 @@ export const onPendingPaymentWrite = functions
   .region(EUROPE_LONDON)
   .firestore
   .document('users/{userId}/pendingPayments/{subscriptionId}')
-  .onCreate(async (snap, context) => {
+  .onCreate(wrapTrigger(async (snap, context) => {
     const { userId, subscriptionId } = context.params;
     const data = snap.data() as PendingPaymentDoc;
 
@@ -156,4 +157,4 @@ export const onPendingPaymentWrite = functions
         processedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     }
-  });
+  }));

@@ -46,6 +46,7 @@ const admin = __importStar(require("firebase-admin"));
 const types_1 = require("../types");
 const auth_1 = require("./auth");
 const region_1 = require("../lib/region");
+const sentry_1 = require("../lib/sentry");
 const db = admin.firestore();
 const auth = admin.auth();
 const BATCH_SIZE = 500;
@@ -76,7 +77,7 @@ function serializeForExport(obj) {
 exports.exportUserData = functions
     .region(region_1.EUROPE_LONDON)
     .runWith({ timeoutSeconds: 300, memory: '512MB' })
-    .https.onCall(async (data, context) => {
+    .https.onCall((0, sentry_1.wrapFunction)(async (data, context) => {
     (0, auth_1.requireAuth)(context);
     const requestedUserId = data?.userId;
     (0, auth_1.requireSelf)(context, requestedUserId);
@@ -161,14 +162,14 @@ exports.exportUserData = functions
         driver_stats: driverStats,
     };
     return exportPayload;
-});
+}));
 /**
  * Delete user account and all associated data (GDPR right to erasure).
  * Uses batched deletes for atomicity where possible; then deletes Firebase Auth user.
  */
 exports.deleteUserAccount = functions
     .region(region_1.EUROPE_LONDON)
-    .https.onCall(async (data, context) => {
+    .https.onCall((0, sentry_1.wrapFunction)(async (data, context) => {
     (0, auth_1.requireAuth)(context);
     const requestedUserId = data?.userId;
     (0, auth_1.requireSelf)(context, requestedUserId);
@@ -244,5 +245,5 @@ exports.deleteUserAccount = functions
     }
     functions.logger.info('User account deleted', { userId });
     return { success: true, message: 'Account and all associated data have been permanently deleted.' };
-});
+}));
 //# sourceMappingURL=gdpr.js.map

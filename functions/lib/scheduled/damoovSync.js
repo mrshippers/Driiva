@@ -46,6 +46,7 @@ exports.syncDamoovTrips = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const region_1 = require("../lib/region");
+const sentry_1 = require("../lib/sentry");
 const types_1 = require("../types");
 const damoov_1 = require("../lib/damoov");
 const db = admin.firestore();
@@ -193,7 +194,7 @@ exports.syncDamoovTrips = functions
     .region(region_1.EUROPE_LONDON)
     .pubsub.schedule('30 0 * * *')
     .timeZone('Europe/London')
-    .onRun(async (_context) => {
+    .onRun((0, sentry_1.wrapTrigger)(async (_context) => {
     functions.logger.info('Starting daily Damoov sync');
     const now = new Date();
     const endDate = formatDate(now);
@@ -249,5 +250,5 @@ exports.syncDamoovTrips = functions
         failCount,
         totalTripsWritten,
     });
-});
+}));
 //# sourceMappingURL=damoovSync.js.map

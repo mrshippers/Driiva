@@ -8,11 +8,12 @@
 import * as functions from 'firebase-functions';
 import { insertUserFromFirebase } from '../lib/neon';
 import { EUROPE_LONDON } from '../lib/region';
+import { wrapTrigger } from '../lib/sentry';
 
 export const syncUserOnSignup = functions
   .region(EUROPE_LONDON)
   .runWith({ secrets: ['DATABASE_URL'] })
-  .auth.user().onCreate(async (user) => {
+  .auth.user().onCreate(wrapTrigger(async (user) => {
   const { uid, email, displayName } = user;
   const emailStr = email ?? '';
   if (!emailStr) {
@@ -26,4 +27,4 @@ export const syncUserOnSignup = functions
     functions.logger.error('Failed to sync user to PostgreSQL', { uid, error });
     throw error;
   }
-});
+}));

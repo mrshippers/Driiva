@@ -3,9 +3,15 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
 import { initSentry, captureError, SentryErrorBoundary } from './lib/sentry';
+import { inject as injectVercelAnalytics } from '@vercel/analytics';
+import { injectSpeedInsights } from '@vercel/speed-insights';
 
 // Initialize Sentry BEFORE rendering (captures early errors)
 initSentry();
+
+// Inject Vercel observability
+injectVercelAnalytics();
+injectSpeedInsights();
 
 // Fallback error boundary UI
 function ErrorFallback({ error, resetError }: { error: Error; resetError: () => void }) {

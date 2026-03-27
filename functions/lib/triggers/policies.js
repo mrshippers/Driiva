@@ -48,12 +48,13 @@ const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const types_1 = require("../types");
 const region_1 = require("../lib/region");
+const sentry_1 = require("../lib/sentry");
 const db = admin.firestore();
 exports.onPolicyWrite = functions
     .region(region_1.EUROPE_LONDON)
     .firestore
     .document(`${types_1.COLLECTION_NAMES.POLICIES}/{policyId}`)
-    .onWrite(async (change, context) => {
+    .onWrite((0, sentry_1.wrapTrigger)(async (change, context) => {
     const { policyId } = context.params;
     // Document deleted — clear activePolicy on user
     if (!change.after.exists) {
@@ -108,5 +109,5 @@ exports.onPolicyWrite = functions
         updatedBy: 'system:onPolicyWrite',
     });
     return null;
-});
+}));
 //# sourceMappingURL=policies.js.map

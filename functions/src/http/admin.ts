@@ -18,6 +18,7 @@ import {
 import { getCurrentPoolPeriod, getShareId } from '../utils/helpers';
 import { requireAuth, requireAdmin } from './auth';
 import { EUROPE_LONDON } from '../lib/region';
+import { wrapFunction } from '../lib/sentry';
 
 const db = admin.firestore();
 
@@ -27,7 +28,7 @@ const db = admin.firestore();
  */
 export const initializePool = functions
   .region(EUROPE_LONDON)
-  .https.onCall(async (data, context) => {
+  .https.onCall(wrapFunction(async (data, context) => {
   requireAuth(context);
   requireAdmin(context);
 
@@ -80,7 +81,7 @@ export const initializePool = functions
       periodEnd: end.toDate().toISOString(),
     },
   };
-});
+}));
 
 /**
  * Get pool period date range
@@ -124,7 +125,7 @@ function getPoolPeriodDates(periodType: 'monthly' | 'quarterly'): {
  */
 export const cancelTrip = functions
   .region(EUROPE_LONDON)
-  .https.onCall(async (data, context) => {
+  .https.onCall(wrapFunction(async (data, context) => {
   const userId = requireAuth(context);
 
   // TODO: Rate limiting – e.g. max N cancelTrip calls per user per minute
@@ -203,7 +204,7 @@ export const cancelTrip = functions
       'Failed to cancel trip'
     );
   }
-});
+}));
 
 // ============================================================================
 // POOL CONTRIBUTION (Callable by authenticated users)
@@ -221,7 +222,7 @@ export const cancelTrip = functions
  */
 export const addPoolContribution = functions
   .region(EUROPE_LONDON)
-  .https.onCall(async (data, context) => {
+  .https.onCall(wrapFunction(async (data, context) => {
   const userId = requireAuth(context);
 
   // TODO: Rate limiting – e.g. max N contributions per user per day, or per amount
@@ -384,4 +385,4 @@ export const addPoolContribution = functions
       'Failed to process pool contribution'
     );
   }
-});
+}));

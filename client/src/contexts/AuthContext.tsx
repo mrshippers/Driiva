@@ -3,6 +3,7 @@ import { auth, db, isFirebaseConfigured } from "../lib/firebase";
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User as FirebaseUser } from "firebase/auth";
 import { doc } from "firebase/firestore";
 import { getDocWithRetry } from "../lib/firestoreRetry";
+import { setSentryUser } from "../lib/sentry";
 
 interface User {
   id: string;
@@ -122,12 +123,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         sessionStorage.removeItem('driiva-demo-mode');
         sessionStorage.removeItem('driiva-demo-user');
         try {
-          // Reload to pick up latest emailVerified state from Firebase servers
-          await firebaseUser.reload();
-          const refreshedUser = auth!.currentUser!;
+          // Reload to pick up latest emailVerified state from Firebase servers.
+          // 5s timeout — if reload hangs we continue with stale state rather than blocking auth.
+          await Promise.race([
+            firebaseUser.reload(),
+            new Promise<void>((_, reject) => setTimeout(() => reject(new Error('reload timeout')), 5000)),
+          ]).catch(() => {});
+          const refreshedUser = auth!.currentUser ?? firebaseUser;
           const emailVerified = refreshedUser.emailVerified;
 
-          const token = await refreshedUser.getIdToken();
+          // 5s timeout on token fetch — prevents hang on slow/offline connections
+          const token = await Promise.race([
+            refreshedUser.getIdToken(),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('getIdToken timeout')), 5000)),
+          ]);
 
           // Wrap the profile fetch in a 5-second timeout using AbortController.
           // Neon (serverless PostgreSQL) cold-starts can block for 20-27 seconds
@@ -155,6 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               emailVerified,
               isAdmin: adminFlag,
             });
+            setSentryUser({ id: refreshedUser.uid, email: refreshedUser.email ?? undefined });
           } else {
             // API unreachable or timed out — fall back to Firestore.
             // Reuse adminFlag already fetched above (no duplicate Firestore read).
@@ -167,9 +177,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               emailVerified,
               isAdmin: adminFlag,
             });
+            setSentryUser({ id: refreshedUser.uid, email: refreshedUser.email ?? undefined });
           }
         } catch (error) {
           console.error("[AuthContext] Error fetching profile from API:", error);
+          // Attempt reload even in the error path so emailVerified is fresh.
+          // Without this, the stale onAuthStateChanged param may read emailVerified=false
+          // for users who already verified, causing a redirect loop to /verify-email.
+          let freshEmailVerified = firebaseUser.emailVerified;
+          try {
+            await firebaseUser.reload();
+            freshEmailVerified = auth!.currentUser?.emailVerified ?? firebaseUser.emailVerified;
+          } catch {
+            // reload failed — use whatever we have
+          }
           const [onboardingComplete, adminFlag] = await Promise.all([
             readOnboardingFromFirestore(firebaseUser.uid),
             readAdminFlagFromFirestore(firebaseUser.uid, firebaseUser.email ?? undefined),
@@ -179,14 +200,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: firebaseUser.email ?? "",
             name: firebaseUser.displayName ?? firebaseUser.email?.split("@")[0] ?? "User",
             onboardingComplete,
-            emailVerified: firebaseUser.emailVerified,
+            emailVerified: freshEmailVerified,
             isAdmin: adminFlag,
           });
+          setSentryUser({ id: firebaseUser.uid, email: firebaseUser.email ?? undefined });
         }
       } else {
         const demoModeActive = sessionStorage.getItem("driiva-demo-mode") === "true";
         if (!demoModeActive) {
           setUser(null);
+          setSentryUser(null);
         }
       }
       setLoading(false);
@@ -206,6 +229,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     // Clear user from state FIRST for instant UI feedback
     setUser(null);
+    setSentryUser(null);
 
     // Clear all localStorage flags
     sessionStorage.removeItem('driiva-demo-mode');

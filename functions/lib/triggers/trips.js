@@ -49,6 +49,8 @@ const notifications_1 = require("../utils/notifications");
 const classifier_1 = require("../http/classifier");
 const tripAnalysis_1 = require("../ai/tripAnalysis");
 const region_1 = require("../lib/region");
+const sentry_1 = require("../lib/sentry");
+const Sentry = __importStar(require("@sentry/node"));
 const db = admin.firestore();
 // ─── DPIA SAFEGUARD ─────────────────────────────────────────────────────────
 // Approved data fields for trip point processing. Any new field types added to
@@ -180,7 +182,7 @@ exports.onTripCreate = functions
     .runWith({ minInstances: 1 })
     .firestore
     .document(`${types_1.COLLECTION_NAMES.TRIPS}/{tripId}`)
-    .onCreate(async (snap, context) => {
+    .onCreate((0, sentry_1.wrapTrigger)(async (snap, context) => {
     const tripId = context.params.tripId;
     const trip = snap.data();
     functions.logger.info(`Processing new trip: ${tripId}`, { userId: trip.userId, status: trip.status });
@@ -236,7 +238,7 @@ exports.onTripCreate = functions
         });
         throw error;
     }
-});
+}));
 /**
  * Triggered when trip status changes
  * Handles:
@@ -248,7 +250,7 @@ exports.onTripStatusChange = functions
     .runWith({ minInstances: 1 })
     .firestore
     .document(`${types_1.COLLECTION_NAMES.TRIPS}/{tripId}`)
-    .onUpdate(async (change, context) => {
+    .onUpdate((0, sentry_1.wrapTrigger)(async (change, context) => {
     const tripId = context.params.tripId;
     const before = change.before.data();
     const after = change.after.data();
@@ -300,7 +302,7 @@ exports.onTripStatusChange = functions
             functions.logger.warn(`[AI] Failed to setup AI analysis for trip ${tripId}:`, aiSetupErr);
         }
     }
-});
+}));
 /**
  * Finalize trip by reading GPS points and computing metrics
  *
@@ -313,6 +315,7 @@ exports.onTripStatusChange = functions
  * 6. Update driver stats transactionally
  */
 async function finalizeTripFromPoints(tripId, tripData) {
+    const pipelineStartMs = Date.now();
     try {
         // 1. Read all GPS points
         const points = await readTripPoints(tripId);
@@ -329,7 +332,7 @@ async function finalizeTripFromPoints(tripId, tripData) {
         checkDpiaCompliance(tripId, points).catch((err) => functions.logger.warn('DPIA check failed (non-blocking)', { tripId, err }));
         // 2. Compute metrics from points
         const startTimestampMs = tripData.startedAt.toMillis();
-        const metrics = (0, helpers_1.computeTripMetrics)(points, startTimestampMs);
+        const metrics = await Sentry.startSpan({ name: 'computeTripMetrics', op: 'trip.compute' }, async () => (0, helpers_1.computeTripMetrics)(points, startTimestampMs));
         functions.logger.info(`Computed metrics for trip ${tripId}:`, {
             distanceMeters: metrics.distanceMeters,
             durationSeconds: metrics.durationSeconds,
@@ -344,7 +347,7 @@ async function finalizeTripFromPoints(tripId, tripData) {
             endLocation: tripData.endLocation,
         });
         // 4. Calculate context (weather fetch is best-effort, 3s timeout)
-        const weatherCondition = await (0, weather_1.getWeatherForTrip)(tripData.startLocation.lat, tripData.startLocation.lng, tripData.startedAt.toDate());
+        const weatherCondition = await Sentry.startSpan({ name: 'getWeatherForTrip', op: 'trip.weather' }, async () => (0, weather_1.getWeatherForTrip)(tripData.startLocation.lat, tripData.startLocation.lng, tripData.startedAt.toDate()));
         const tripContext = {
             weatherCondition,
             isNightDriving: (0, helpers_1.isNightTime)(tripData.startedAt) || (0, helpers_1.isNightTime)(tripData.endedAt),
@@ -377,9 +380,21 @@ async function finalizeTripFromPoints(tripId, tripData) {
         // sets finalStatus = 'completed'. This avoids duplicate Claude API calls.
         if (finalStatus === 'completed') {
             const updatedTrip = (await tripRef.get()).data();
-            await updateDriverProfileAndPoolShare(updatedTrip, tripId);
+            await Sentry.startSpan({ name: 'updateDriverProfileAndPoolShare', op: 'trip.profile' }, async () => updateDriverProfileAndPoolShare(updatedTrip, tripId));
             checkAchievementsAsync(updatedTrip.userId, updatedTrip, tripId);
         }
+        functions.logger.info('[metric] trip_pipeline', {
+            metric: 'trip_pipeline',
+            tripId,
+            success: true,
+            latencyMs: Date.now() - pipelineStartMs,
+            pointCount: points.length,
+            distanceMeters: metrics.distanceMeters,
+            durationSeconds: metrics.durationSeconds,
+            score: metrics.score,
+            finalStatus,
+            flaggedForReview: anomalies.flaggedForReview,
+        });
     }
     catch (error) {
         functions.logger.error(`Error finalizing trip ${tripId}:`, error);

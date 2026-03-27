@@ -85,7 +85,6 @@ export default function SignIn() {
   }, [loginError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('[SignIn] handleSubmit called');
     e.preventDefault();
     e.stopPropagation();
 
@@ -132,12 +131,17 @@ export default function SignIn() {
     }
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await Promise.race([
+        signInWithEmailAndPassword(auth, email, password),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Sign-in timed out. Please check your connection and try again.')), 10000)
+        ),
+      ]);
       const user = userCredential.user;
 
-      console.log('[SignIn] Authentication successful, user:', user.uid);
-
       let onboardingComplete = false;
+      let score: number | undefined;
+      let lastTripLabel: string | undefined;
 
       try {
         if (!db) throw new Error('Firestore not initialized');
@@ -145,11 +149,15 @@ export default function SignIn() {
         const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
-          const userData = userDoc.data();
-          onboardingComplete = userData?.onboardingComplete === true;
-          console.log('[SignIn] Profile found, onboardingComplete:', onboardingComplete);
+          const d = userDoc.data();
+          onboardingComplete = d?.onboardingComplete === true;
+          score = d?.drivingProfile?.score ?? d?.drivingScore;
+          const recent = d?.recentTrips;
+          if (Array.isArray(recent) && recent.length > 0) {
+            const last = recent[0];
+            lastTripLabel = last.from && last.to ? `${last.from} → ${last.to}` : last.date;
+          }
         } else {
-          console.log('[SignIn] Profile not found, creating...');
           await setDoc(userDocRef, {
             uid: user.uid,
             email: user.email || email,
@@ -159,8 +167,8 @@ export default function SignIn() {
             updatedAt: new Date().toISOString(),
           });
         }
-      } catch (profileErr) {
-        console.error('[SignIn] Profile check/create error:', profileErr);
+      } catch {
+        // Non-critical — auth succeeded, profile will be created by Cloud Function
       }
 
       const displayName = user.displayName || user.email?.split('@')[0] || 'User';
@@ -172,24 +180,6 @@ export default function SignIn() {
         onboardingComplete,
         emailVerified: user.emailVerified,
       });
-
-      // Read score + last trip for the overlay
-      let score: number | undefined;
-      let lastTripLabel: string | undefined;
-      try {
-        if (db) {
-          const userSnap = await getDoc(doc(db, 'users', user.uid));
-          if (userSnap.exists()) {
-            const d = userSnap.data();
-            score = d?.drivingProfile?.score ?? d?.drivingScore;
-            const recent = d?.recentTrips;
-            if (Array.isArray(recent) && recent.length > 0) {
-              const last = recent[0];
-              lastTripLabel = last.from && last.to ? `${last.from} → ${last.to}` : last.date;
-            }
-          }
-        }
-      } catch { /* non-critical */ }
 
       saveLastUser({ name: displayName, email: user.email || email, score, lastTrip: lastTripLabel });
 
@@ -230,7 +220,6 @@ export default function SignIn() {
       });
     } finally {
       setIsLoading(false);
-      console.log('[SignIn] handleSubmit completed');
     }
   };
 
@@ -244,12 +233,12 @@ export default function SignIn() {
     setLoginError(null);
 
     try {
-      console.log('[SignIn] Starting Google sign-in...');
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
-      console.log('[SignIn] Google auth successful, user:', user.uid);
 
       let onboardingComplete = false;
+      let gScore: number | undefined;
+      let gLastTrip: string | undefined;
 
       try {
         if (!db) throw new Error('Firestore not initialized');
@@ -257,11 +246,15 @@ export default function SignIn() {
         const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
-          const userData = userDoc.data();
-          onboardingComplete = userData?.onboardingComplete === true;
-          console.log('[SignIn] Google user profile found, onboardingComplete:', onboardingComplete);
+          const d = userDoc.data();
+          onboardingComplete = d?.onboardingComplete === true;
+          gScore = d?.drivingProfile?.score ?? d?.drivingScore;
+          const recent = d?.recentTrips;
+          if (Array.isArray(recent) && recent.length > 0) {
+            const last = recent[0];
+            gLastTrip = last.from && last.to ? `${last.from} → ${last.to}` : last.date;
+          }
         } else {
-          console.log('[SignIn] Google user profile not found, creating...');
           await setDoc(userDocRef, {
             uid: user.uid,
             email: user.email || '',
@@ -272,8 +265,8 @@ export default function SignIn() {
             updatedAt: new Date().toISOString(),
           });
         }
-      } catch (profileErr) {
-        console.error('[SignIn] Google user profile check/create error:', profileErr);
+      } catch {
+        // Non-critical — auth succeeded, profile will be created by Cloud Function
       }
 
       const gDisplayName = user.displayName || user.email?.split('@')[0] || 'User';
@@ -285,23 +278,6 @@ export default function SignIn() {
         onboardingComplete,
         emailVerified: user.emailVerified,
       });
-
-      let gScore: number | undefined;
-      let gLastTrip: string | undefined;
-      try {
-        if (db) {
-          const uSnap = await getDoc(doc(db, 'users', user.uid));
-          if (uSnap.exists()) {
-            const d = uSnap.data();
-            gScore = d?.drivingProfile?.score ?? d?.drivingScore;
-            const recent = d?.recentTrips;
-            if (Array.isArray(recent) && recent.length > 0) {
-              const last = recent[0];
-              gLastTrip = last.from && last.to ? `${last.from} → ${last.to}` : last.date;
-            }
-          }
-        }
-      } catch { /* non-critical */ }
 
       saveLastUser({ name: gDisplayName, email: user.email || '', score: gScore, lastTrip: gLastTrip });
 

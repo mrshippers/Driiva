@@ -34,6 +34,8 @@ import { notifyTripComplete, notifyAchievementsUnlocked } from '../utils/notific
 import { classifyCompletedTrip } from '../http/classifier';
 import { analyzeTrip } from '../ai/tripAnalysis';
 import { EUROPE_LONDON } from '../lib/region';
+import { wrapTrigger } from '../lib/sentry';
+import * as Sentry from '@sentry/node';
 
 const db = admin.firestore();
 
@@ -188,7 +190,7 @@ export const onTripCreate = functions
   .runWith({ minInstances: 1 })
   .firestore
   .document(`${COLLECTION_NAMES.TRIPS}/{tripId}`)
-  .onCreate(async (snap, context) => {
+  .onCreate(wrapTrigger(async (snap, context) => {
     const tripId = context.params.tripId;
     const trip = snap.data() as TripDocument;
     
@@ -258,7 +260,7 @@ export const onTripCreate = functions
 
       throw error;
     }
-  });
+  }));
 
 /**
  * Triggered when trip status changes
@@ -271,7 +273,7 @@ export const onTripStatusChange = functions
   .runWith({ minInstances: 1 })
   .firestore
   .document(`${COLLECTION_NAMES.TRIPS}/{tripId}`)
-  .onUpdate(async (change, context) => {
+  .onUpdate(wrapTrigger(async (change, context) => {
     const tripId = context.params.tripId;
     const before = change.before.data() as TripDocument;
     const after = change.after.data() as TripDocument;
@@ -330,7 +332,7 @@ export const onTripStatusChange = functions
         functions.logger.warn(`[AI] Failed to setup AI analysis for trip ${tripId}:`, aiSetupErr);
       }
     }
-  });
+  }));
 
 /**
  * Finalize trip by reading GPS points and computing metrics
@@ -347,6 +349,7 @@ async function finalizeTripFromPoints(
   tripId: string,
   tripData: TripDocument
 ): Promise<void> {
+  const pipelineStartMs = Date.now();
   try {
     // 1. Read all GPS points
     const points = await readTripPoints(tripId);
@@ -369,7 +372,10 @@ async function finalizeTripFromPoints(
     
     // 2. Compute metrics from points
     const startTimestampMs = tripData.startedAt.toMillis();
-    const metrics = computeTripMetrics(points, startTimestampMs);
+    const metrics = await Sentry.startSpan(
+      { name: 'computeTripMetrics', op: 'trip.compute' },
+      async () => computeTripMetrics(points, startTimestampMs),
+    );
     
     functions.logger.info(`Computed metrics for trip ${tripId}:`, {
       distanceMeters: metrics.distanceMeters,
@@ -387,10 +393,13 @@ async function finalizeTripFromPoints(
     });
     
     // 4. Calculate context (weather fetch is best-effort, 3s timeout)
-    const weatherCondition = await getWeatherForTrip(
-      tripData.startLocation.lat,
-      tripData.startLocation.lng,
-      tripData.startedAt.toDate(),
+    const weatherCondition = await Sentry.startSpan(
+      { name: 'getWeatherForTrip', op: 'trip.weather' },
+      async () => getWeatherForTrip(
+        tripData.startLocation.lat,
+        tripData.startLocation.lng,
+        tripData.startedAt.toDate(),
+      ),
     );
     const tripContext = {
       weatherCondition,
@@ -430,10 +439,26 @@ async function finalizeTripFromPoints(
     // sets finalStatus = 'completed'. This avoids duplicate Claude API calls.
     if (finalStatus === 'completed') {
       const updatedTrip = (await tripRef.get()).data() as TripDocument;
-      await updateDriverProfileAndPoolShare(updatedTrip, tripId);
+      await Sentry.startSpan(
+        { name: 'updateDriverProfileAndPoolShare', op: 'trip.profile' },
+        async () => updateDriverProfileAndPoolShare(updatedTrip, tripId),
+      );
       checkAchievementsAsync(updatedTrip.userId, updatedTrip, tripId);
     }
-    
+
+    functions.logger.info('[metric] trip_pipeline', {
+      metric: 'trip_pipeline',
+      tripId,
+      success: true,
+      latencyMs: Date.now() - pipelineStartMs,
+      pointCount: points.length,
+      distanceMeters: metrics.distanceMeters,
+      durationSeconds: metrics.durationSeconds,
+      score: metrics.score,
+      finalStatus,
+      flaggedForReview: anomalies.flaggedForReview,
+    });
+
   } catch (error) {
     functions.logger.error(`Error finalizing trip ${tripId}:`, error);
     

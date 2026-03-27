@@ -17,6 +17,7 @@ import {
   calculateProjectedRefund,
 } from '../utils/helpers';
 import { EUROPE_LONDON } from '../lib/region';
+import { wrapTrigger } from '../lib/sentry';
 
 const db = admin.firestore();
 
@@ -31,7 +32,7 @@ export const finalizePoolPeriod = functions
   .pubsub
   .schedule('0 0 1 * *') // 1st of each month at midnight UTC
   .timeZone('America/New_York')
-  .onRun(async (_context) => {
+  .onRun(wrapTrigger(async (_context) => {
     const previousPeriod = getPreviousPoolPeriod();
     
     functions.logger.info(`Finalizing pool period: ${previousPeriod}`);
@@ -154,7 +155,7 @@ export const finalizePoolPeriod = functions
       functions.logger.error(`Error finalizing pool period ${previousPeriod}:`, error);
       throw error;
     }
-  });
+  }));
 
 /**
  * Recalculate pool share projections daily
@@ -165,7 +166,7 @@ export const recalculatePoolShares = functions
   .pubsub
   .schedule('0 6 * * *') // Daily at 6 AM UTC
   .timeZone('America/New_York')
-  .onRun(async (_context) => {
+  .onRun(wrapTrigger(async (_context) => {
     const currentPeriod = getCurrentPoolPeriod();
     
     functions.logger.info(`Recalculating pool shares for period: ${currentPeriod}`);
@@ -262,7 +263,7 @@ export const recalculatePoolShares = functions
       functions.logger.error(`Error recalculating pool shares:`, error);
       throw error;
     }
-  });
+  }));
 
 /**
  * Get pool period date range

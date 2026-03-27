@@ -123,15 +123,15 @@ function CoverageTypeSection({ currentScore, coverageType, premiumAmount, loadin
               <div className="mt-4 p-3 bg-white/[0.03] rounded-xl border border-white/[0.05]">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-white/60">Voluntary Excess</span>
-                  <span className="text-sm font-medium text-white">£250</span>
+                  <span className="text-sm font-medium text-white/40">—</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-white/60">Compulsory Excess</span>
-                  <span className="text-sm font-medium text-white">£350</span>
+                  <span className="text-sm font-medium text-white/40">—</span>
                 </div>
                 <div className="mt-2 pt-2 border-t border-white/[0.05] flex items-center justify-between">
                   <span className="text-xs font-semibold text-white/80">Total Excess</span>
-                  <span className="text-base font-semibold text-emerald-400">£600</span>
+                  <span className="text-base font-semibold text-white/40">—</span>
                 </div>
               </div>
 

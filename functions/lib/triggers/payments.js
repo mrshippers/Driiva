@@ -62,6 +62,7 @@ const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const types_1 = require("../types");
 const region_1 = require("../lib/region");
+const sentry_1 = require("../lib/sentry");
 const db = admin.firestore();
 /**
  * Trigger: fires when a pendingPayment document is created/updated.
@@ -74,7 +75,7 @@ exports.onPendingPaymentWrite = functions
     .region(region_1.EUROPE_LONDON)
     .firestore
     .document('users/{userId}/pendingPayments/{subscriptionId}')
-    .onCreate(async (snap, context) => {
+    .onCreate((0, sentry_1.wrapTrigger)(async (snap, context) => {
     const { userId, subscriptionId } = context.params;
     const data = snap.data();
     if (data.status !== 'pending')
@@ -166,5 +167,5 @@ exports.onPendingPaymentWrite = functions
             processedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
     }
-});
+}));
 //# sourceMappingURL=payments.js.map

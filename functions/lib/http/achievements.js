@@ -43,6 +43,7 @@ const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const achievements_1 = require("../utils/achievements");
 const region_1 = require("../lib/region");
+const sentry_1 = require("../lib/sentry");
 const db = admin.firestore();
 /**
  * Seed achievement definitions into the top-level `achievements` collection.
@@ -50,7 +51,7 @@ const db = admin.firestore();
  */
 exports.seedAchievements = functions
     .region(region_1.EUROPE_LONDON)
-    .https.onCall(async (_data, context) => {
+    .https.onCall((0, sentry_1.wrapFunction)(async (_data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Must be logged in.');
     }
@@ -69,5 +70,5 @@ exports.seedAchievements = functions
     await batch.commit();
     functions.logger.info(`[seedAchievements] Seeded ${achievements_1.ACHIEVEMENT_DEFINITIONS.length} definitions`);
     return { seeded: achievements_1.ACHIEVEMENT_DEFINITIONS.length };
-});
+}));
 //# sourceMappingURL=achievements.js.map

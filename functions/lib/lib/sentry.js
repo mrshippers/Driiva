@@ -154,7 +154,7 @@ function wrapFunction(handler) {
  * Wrap a Firestore trigger handler with Sentry error tracking.
  */
 function wrapTrigger(handler) {
-    return async (...args) => {
+    return (async (...args) => {
         initSentry();
         try {
             await handler(...args);
@@ -168,6 +168,6 @@ function wrapTrigger(handler) {
             }
             throw error;
         }
-    };
+    });
 }
 //# sourceMappingURL=sentry.js.map

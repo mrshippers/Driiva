@@ -47,6 +47,7 @@ const admin = __importStar(require("firebase-admin"));
 const types_1 = require("../types");
 const tripAnalysis_1 = require("../ai/tripAnalysis");
 const region_1 = require("../lib/region");
+const sentry_1 = require("../lib/sentry");
 const db = admin.firestore();
 /**
  * Callable: Re-analyze a trip with Claude AI
@@ -59,7 +60,7 @@ const db = admin.firestore();
 exports.analyzeTripAI = functions
     .region(region_1.EUROPE_LONDON)
     .runWith({ secrets: ['ANTHROPIC_API_KEY'] })
-    .https.onCall(async (data, context) => {
+    .https.onCall((0, sentry_1.wrapFunction)(async (data, context) => {
     // Auth check
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Must be signed in to request AI analysis.');
@@ -139,7 +140,7 @@ exports.analyzeTripAI = functions
         functions.logger.error(`[AI] On-demand analysis failed for trip ${tripId}:`, error);
         throw new functions.https.HttpsError('internal', 'AI analysis failed. Please try again later.');
     }
-});
+}));
 /**
  * Callable: Fetch AI insights for a trip
  *
@@ -151,7 +152,7 @@ exports.analyzeTripAI = functions
 exports.getAIInsights = functions
     .region(region_1.EUROPE_LONDON)
     .runWith({ secrets: ['ANTHROPIC_API_KEY'] })
-    .https.onCall(async (data, context) => {
+    .https.onCall((0, sentry_1.wrapFunction)(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Must be signed in.');
     }
@@ -190,5 +191,5 @@ exports.getAIInsights = functions
         functions.logger.error(`[AI] getAIInsights failed for trip ${tripId}:`, error);
         throw new functions.https.HttpsError('internal', 'Failed to retrieve AI insights.');
     }
-});
+}));
 //# sourceMappingURL=aiAnalysis.js.map

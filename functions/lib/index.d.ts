@@ -41,6 +41,7 @@ export { updateLeaderboards } from './scheduled/leaderboard';
 export { finalizePoolPeriod, recalculatePoolShares } from './scheduled/pool';
 export { sendWeeklySummary } from './scheduled/notifications';
 export { syncDamoovTrips } from './scheduled/damoovSync';
+export { monitorTripHealth } from './scheduled/watchdog';
 export { initializePool } from './http/admin';
 export { addPoolContribution, cancelTrip } from './http/admin';
 export { classifyTrip, batchClassifyTrips } from './http/classifier';

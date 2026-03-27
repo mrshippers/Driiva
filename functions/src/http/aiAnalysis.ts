@@ -19,6 +19,7 @@ import {
 } from '../types';
 import { analyzeTrip } from '../ai/tripAnalysis';
 import { EUROPE_LONDON } from '../lib/region';
+import { wrapFunction } from '../lib/sentry';
 
 const db = admin.firestore();
 
@@ -33,7 +34,7 @@ const db = admin.firestore();
 export const analyzeTripAI = functions
   .region(EUROPE_LONDON)
   .runWith({ secrets: ['ANTHROPIC_API_KEY'] })
-  .https.onCall(async (data, context) => {
+  .https.onCall(wrapFunction(async (data, context) => {
   // Auth check
   if (!context.auth) {
     throw new functions.https.HttpsError(
@@ -141,7 +142,7 @@ export const analyzeTripAI = functions
       'AI analysis failed. Please try again later.'
     );
   }
-});
+}));
 
 /**
  * Callable: Fetch AI insights for a trip
@@ -154,7 +155,7 @@ export const analyzeTripAI = functions
 export const getAIInsights = functions
   .region(EUROPE_LONDON)
   .runWith({ secrets: ['ANTHROPIC_API_KEY'] })
-  .https.onCall(async (data, context) => {
+  .https.onCall(wrapFunction(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       'unauthenticated',
@@ -211,4 +212,4 @@ export const getAIInsights = functions
       'Failed to retrieve AI insights.'
     );
   }
-});
+}));

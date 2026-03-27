@@ -31,6 +31,8 @@ export default defineConfig({
             "firebase/auth",
             "firebase/firestore",
             "firebase/functions",
+            "firebase/performance",
+            "firebase/analytics",
           ],
           // React core
           vendor: ["react", "react-dom"],

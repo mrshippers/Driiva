@@ -49,7 +49,12 @@ export const health = functions
     res.status(200).json({
       status: 'healthy',
       service: 'driiva-functions',
+      version: process.env.npm_package_version || '1.0.0',
+      region: 'europe-west2',
       timestamp,
+      checks: {
+        firestore: 'ok',
+      },
     });
   } catch (e) {
     functions.logger.warn('[health] Dependency check failed', { error: String(e) });

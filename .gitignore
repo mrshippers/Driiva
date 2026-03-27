@@ -14,6 +14,7 @@ vite.config.ts.*
 .env.*.local
 functions/.env
 functions/.env.local
+functions/.env.driiva-staging
 .vercel
 api/_server.js
 .env.staging

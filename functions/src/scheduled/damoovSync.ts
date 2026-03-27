@@ -11,6 +11,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { EUROPE_LONDON } from '../lib/region';
+import { wrapTrigger } from '../lib/sentry';
 import { COLLECTION_NAMES } from '../types';
 import { fetchDamoovTrips, fetchDamoovDailyStats, DamoovTripData } from '../lib/damoov';
 
@@ -177,7 +178,7 @@ export const syncDamoovTrips = functions
   .region(EUROPE_LONDON)
   .pubsub.schedule('30 0 * * *')
   .timeZone('Europe/London')
-  .onRun(async (_context) => {
+  .onRun(wrapTrigger(async (_context) => {
     functions.logger.info('Starting daily Damoov sync');
 
     const now = new Date();
@@ -249,4 +250,4 @@ export const syncDamoovTrips = functions
       failCount,
       totalTripsWritten,
     });
-  });
+  }));

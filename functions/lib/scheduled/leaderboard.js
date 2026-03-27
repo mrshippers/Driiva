@@ -44,6 +44,7 @@ const admin = __importStar(require("firebase-admin"));
 const types_1 = require("../types");
 const helpers_1 = require("../utils/helpers");
 const region_1 = require("../lib/region");
+const sentry_1 = require("../lib/sentry");
 const db = admin.firestore();
 // Maximum rankings to store
 const MAX_RANKINGS = 100;
@@ -54,7 +55,7 @@ exports.updateLeaderboards = functions
     .region(region_1.EUROPE_LONDON)
     .pubsub
     .schedule('every 15 minutes')
-    .onRun(async (_context) => {
+    .onRun((0, sentry_1.wrapTrigger)(async (_context) => {
     functions.logger.info('Starting leaderboard update');
     try {
         await Promise.all([
@@ -68,7 +69,7 @@ exports.updateLeaderboards = functions
         functions.logger.error('Error updating leaderboards:', error);
         throw error;
     }
-});
+}));
 /**
  * Calculate and store leaderboard for a specific period type.
  *

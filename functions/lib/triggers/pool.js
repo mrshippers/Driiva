@@ -43,6 +43,7 @@ const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const types_1 = require("../types");
 const region_1 = require("../lib/region");
+const sentry_1 = require("../lib/sentry");
 const db = admin.firestore();
 /**
  * Triggered when a pool share is created or updated
@@ -52,7 +53,7 @@ exports.onPoolShareWrite = functions
     .region(region_1.EUROPE_LONDON)
     .firestore
     .document(`${types_1.COLLECTION_NAMES.POOL_SHARES}/{shareId}`)
-    .onWrite(async (change, context) => {
+    .onWrite((0, sentry_1.wrapTrigger)(async (change, context) => {
     const shareId = context.params.shareId;
     // Handle deletion
     if (!change.after.exists) {
@@ -98,5 +99,5 @@ exports.onPoolShareWrite = functions
         functions.logger.error(`Error syncing pool share ${shareId}:`, error);
         throw error;
     }
-});
+}));
 //# sourceMappingURL=pool.js.map

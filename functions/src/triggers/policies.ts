@@ -13,6 +13,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { PolicyDocument, ActivePolicySummary, COLLECTION_NAMES } from '../types';
 import { EUROPE_LONDON } from '../lib/region';
+import { wrapTrigger } from '../lib/sentry';
 
 const db = admin.firestore();
 
@@ -20,7 +21,7 @@ export const onPolicyWrite = functions
   .region(EUROPE_LONDON)
   .firestore
   .document(`${COLLECTION_NAMES.POLICIES}/{policyId}`)
-  .onWrite(async (change, context) => {
+  .onWrite(wrapTrigger(async (change, context) => {
     const { policyId } = context.params;
 
     // Document deleted — clear activePolicy on user
@@ -91,4 +92,4 @@ export const onPolicyWrite = functions
       });
 
     return null;
-  });
+  }));

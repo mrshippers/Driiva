@@ -57,6 +57,7 @@ export { updateLeaderboards } from './scheduled/leaderboard';
 export { finalizePoolPeriod, recalculatePoolShares } from './scheduled/pool';
 export { sendWeeklySummary } from './scheduled/notifications';
 export { syncDamoovTrips } from './scheduled/damoovSync';
+export { monitorTripHealth } from './scheduled/watchdog';
 
 // ============================================================================
 // HTTP CALLABLE FUNCTIONS

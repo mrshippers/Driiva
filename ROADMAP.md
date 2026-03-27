@@ -33,7 +33,7 @@
 - [x] Add Content Security Policy headers — *done: added to server/middleware/security.ts securityHeaders; 'unsafe-inline' for style-src documented (required by Tailwind/Leaflet)*
 - [x] Set up GitHub Actions CI/CD pipeline — *done: .github/workflows/ci.yml; jobs: lint-and-typecheck, build (client+server), functions-build, test; triggers on push/PR to main*
 - [x] Write first batch of tests (auth flow, scoring algorithm, trip processing) — *done: 197 tests passing across 12 files; covers auth-flow, scoring, trip-metrics, insurance, feature-flags, GDPR, AI analysis, leaderboard, pool scheduling, trip triggers, policy triggers, server API routes*
-- [ ] Set up staging Firebase project
+- [x] Set up staging Firebase project — *done: `driiva-staging` project provisioned; `.env.staging` configured; `.firebaserc` alias set; `build:staging`/`dev:staging` scripts added; `deploy-staging` CI job wired; Firestore rules + indexes deployed; `functions/.env.driiva-staging` created for CF staging overrides. Remaining manual steps: upgrade to Blaze plan → deploy functions; set FIREBASE_TOKEN + VERCEL_* GitHub Secrets; create Neon staging branch; create Vercel staging project.*
 - [x] Add Firebase Analytics initialisation — *done: getAnalytics() in client/src/lib/firebase.ts; guarded by VITE_FIREBASE_MEASUREMENT_ID; try/catch for ad-blocker safety*
 - [x] Implement email verification — *done: sendEmailVerification() in signup.tsx; emailVerified field on User type in AuthContext; ProtectedRoute hard-redirects unverified users to /verify-email (skipEmailVerificationCheck=true on /quick-onboarding and /verify-email routes); verify-email.tsx page with resend + check flow*
 - [x] Backend & database security audit — *done: 12 issues found and fixed across Firestore rules, PostgreSQL, Cloud Functions, and API routes. See DRIIVA_CHANGELOG.md for full details.*
@@ -89,6 +89,14 @@ These are known gaps that don't have tickets yet:
 - [x] **Achievements backend** — 8 definitions, unlock logic in Cloud Functions, frontend wired to real Firestore data.
 - [ ] **WebAuthn/Passkey login** — `server/webauthn.ts` is scaffolded but not exposed as a real login flow in the frontend.
 - [ ] **Staging environment** — no Firebase staging project exists yet. Recommended before any production payments go live.
+
+## Sprint: "Observation Mode" (Live Monitoring)
+
+- [x] Complete Sentry wiring — wrapFunction/wrapTrigger on all Cloud Functions; setSentryUser in AuthContext
+- [x] Add Firebase Performance Monitoring — client SDK + custom trace utility (`performanceTraces.ts`)
+- [x] Add structured metrics logging — trip pipeline, classifier, AI analysis with `[metric]` tags for Cloud Monitoring
+- [x] Add Vercel Analytics + Speed Insights — Web Vitals, page latency, geographic distribution
+- [x] Configure alerting — watchdog function (`monitorTripHealth`) for failed trips, GPS drop-off, stuck trips; health endpoint enhanced with version/checks
 
 ## Completed (reference)
 

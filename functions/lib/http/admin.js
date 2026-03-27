@@ -49,6 +49,7 @@ const types_1 = require("../types");
 const helpers_1 = require("../utils/helpers");
 const auth_1 = require("./auth");
 const region_1 = require("../lib/region");
+const sentry_1 = require("../lib/sentry");
 const db = admin.firestore();
 /**
  * Initialize community pool (admin only)
@@ -56,7 +57,7 @@ const db = admin.firestore();
  */
 exports.initializePool = functions
     .region(region_1.EUROPE_LONDON)
-    .https.onCall(async (data, context) => {
+    .https.onCall((0, sentry_1.wrapFunction)(async (data, context) => {
     (0, auth_1.requireAuth)(context);
     (0, auth_1.requireAdmin)(context);
     // TODO: Rate limiting – e.g. allow at most 1 initializePool per project per hour
@@ -98,7 +99,7 @@ exports.initializePool = functions
             periodEnd: end.toDate().toISOString(),
         },
     };
-});
+}));
 /**
  * Get pool period date range
  */
@@ -134,7 +135,7 @@ function getPoolPeriodDates(periodType) {
  */
 exports.cancelTrip = functions
     .region(region_1.EUROPE_LONDON)
-    .https.onCall(async (data, context) => {
+    .https.onCall((0, sentry_1.wrapFunction)(async (data, context) => {
     const userId = (0, auth_1.requireAuth)(context);
     // TODO: Rate limiting – e.g. max N cancelTrip calls per user per minute
     // Example: increment counter in Firestore/Redis keyed by userId, reject if over threshold
@@ -185,7 +186,7 @@ exports.cancelTrip = functions
         // Expired token: requireAuth() already throws unauthenticated with sign-in-again message
         throw new functions.https.HttpsError('internal', 'Failed to cancel trip');
     }
-});
+}));
 // ============================================================================
 // POOL CONTRIBUTION (Callable by authenticated users)
 // ============================================================================
@@ -201,7 +202,7 @@ exports.cancelTrip = functions
  */
 exports.addPoolContribution = functions
     .region(region_1.EUROPE_LONDON)
-    .https.onCall(async (data, context) => {
+    .https.onCall((0, sentry_1.wrapFunction)(async (data, context) => {
     const userId = (0, auth_1.requireAuth)(context);
     // TODO: Rate limiting – e.g. max N contributions per user per day, or per amount
     // Example: check Firestore/Redis for count in current period for userId
@@ -326,5 +327,5 @@ exports.addPoolContribution = functions
         }
         throw new functions.https.HttpsError('internal', 'Failed to process pool contribution');
     }
-});
+}));
 //# sourceMappingURL=admin.js.map

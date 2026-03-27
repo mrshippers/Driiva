@@ -84,15 +84,15 @@ jobs:
     needs: [test, functions-build]
     environment: staging
     env:
-      # ── Staging Firebase public config (driiva-staging) ──────────────────
-      VITE_FIREBASE_API_KEY: AIzaSyCl3f6kzImoxUcFFnyET5t-XbjgLwYvX9A
-      VITE_FIREBASE_AUTH_DOMAIN: driiva-staging.firebaseapp.com
-      VITE_FIREBASE_PROJECT_ID: driiva-staging
-      VITE_FIREBASE_STORAGE_BUCKET: driiva-staging.firebasestorage.app
-      VITE_FIREBASE_MESSAGING_SENDER_ID: "36820666947"
-      VITE_FIREBASE_APP_ID: 1:36820666947:web:f95afe817318a5a79862f6
-      VITE_FIREBASE_MEASUREMENT_ID: G-RGXRB5QBEF
-      VITE_SENTRY_DSN: https://180774c56396c59418bd1fca9d3c814d@o4510852635099136.ingest.de.sentry.io/4510852639948880
+      # ── Staging Firebase public config (from GitHub Secrets) ─────────────
+      VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+      VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+      VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+      VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+      VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+      VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+      VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+      VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
       VITE_FEATURE_AI_INSIGHTS: "true"
       VITE_FEATURE_COMMUNITY_POOL: "true"
       VITE_FEATURE_LEADERBOARD: "true"
@@ -127,7 +127,9 @@ jobs:
       # Deploys to driiva-staging Firebase project.
       # Cloud Functions require Blaze plan — if not upgraded yet, change to:
       #   --only firestore:rules,firestore:indexes
+      # TODO: Create staging Firebase project and add FIREBASE_TOKEN to GitHub Secrets
       - name: Deploy Firebase to staging
+        continue-on-error: true
         run: |
           npx firebase deploy \
             --only firestore:rules,firestore:indexes,functions \
@@ -140,7 +142,9 @@ jobs:
       # Deploys the pre-built client + Express serverless function.
       # VERCEL_ORG_ID and VERCEL_PROJECT_ID env vars are read automatically
       # by the Vercel CLI to identify which project to deploy to.
+      # TODO: Create staging Firebase project and add FIREBASE_TOKEN to GitHub Secrets
       - name: Deploy to Vercel (staging)
+        continue-on-error: true
         run: npx vercel --prod --token "$VERCEL_TOKEN" --yes
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}

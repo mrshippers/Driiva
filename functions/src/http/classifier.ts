@@ -106,6 +106,7 @@ async function callPythonClassifier(
     };
   }
 
+  const startMs = Date.now();
   try {
     const response = await fetch(`${CLASSIFIER_URL}/classify_trip`, {
       method: 'POST',
@@ -126,9 +127,29 @@ async function callPythonClassifier(
       throw new Error(`Classifier returned ${response.status}: ${errorText}`);
     }
 
-    return await response.json() as ClassifierResponse;
+    const result = await response.json() as ClassifierResponse;
+    const latencyMs = Date.now() - startMs;
+    functions.logger.info('[metric] classifier_call', {
+      metric: 'classifier_call',
+      tripId,
+      success: true,
+      latencyMs,
+      pointCount: points.length,
+      stopCount: result.classification?.summary?.total_stops ?? 0,
+      segmentCount: result.classification?.summary?.total_trips ?? 0,
+    });
+    return result;
   } catch (error) {
+    const latencyMs = Date.now() - startMs;
     functions.logger.error(`Error calling classifier for trip ${tripId}:`, error);
+    functions.logger.info('[metric] classifier_call', {
+      metric: 'classifier_call',
+      tripId,
+      success: false,
+      latencyMs,
+      pointCount: points.length,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
     return {
       success: false,
       trip_id: tripId,

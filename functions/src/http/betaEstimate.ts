@@ -15,6 +15,7 @@ import {
   BETA_ESTIMATE_VERSION,
 } from '../lib/betaEstimateService';
 import { EUROPE_LONDON } from '../lib/region';
+import { wrapFunction, wrapTrigger } from '../lib/sentry';
 
 const Timestamp = admin.firestore.Timestamp;
 const FieldValue = admin.firestore.FieldValue;
@@ -45,7 +46,7 @@ async function getCommunityPoolSafety(): Promise<number> {
  */
 export const calculateBetaEstimateForUser = functions
   .region(EUROPE_LONDON)
-  .https.onCall(
+  .https.onCall(wrapFunction(
   async (data: { userId?: string }, context) => {
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'Must be signed in');
@@ -115,7 +116,7 @@ export const calculateBetaEstimateForUser = functions
       estimate: result,
     };
   }
-);
+));
 
 /**
  * When user profile (or pool) changes, recompute beta estimate and upsert.
@@ -125,7 +126,7 @@ export const onUserUpdateRecalcBetaEstimate = functions
   .region(EUROPE_LONDON)
   .firestore
   .document(`${COLLECTION_NAMES.USERS}/{userId}`)
-  .onUpdate(async (change, context) => {
+  .onUpdate(wrapTrigger(async (change, context) => {
     const userId = context.params.userId as string;
     const after = change.after.data() as UserDocument;
 
@@ -170,4 +171,4 @@ export const onUserUpdateRecalcBetaEstimate = functions
       userId,
       estimatedPremium: result.estimatedPremium,
     });
-  });
+  }));

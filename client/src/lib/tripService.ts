@@ -184,6 +184,7 @@ export class TripPointStreamer {
 
       await setDoc(batchRef, {
         tripId: this.tripId,
+        userId: this.userId,
         batchIndex: this.batchIndex,
         startOffset: pointsToWrite[0]?.t ?? 0,
         endOffset: pointsToWrite[pointsToWrite.length - 1]?.t ?? 0,

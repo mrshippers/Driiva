@@ -44,5 +44,5 @@ export declare function wrapFunction<TData, TResult>(handler: (data: TData, cont
 /**
  * Wrap a Firestore trigger handler with Sentry error tracking.
  */
-export declare function wrapTrigger<T>(handler: (...args: T[]) => Promise<void>): (...args: T[]) => Promise<void>;
+export declare function wrapTrigger<T extends (...args: any[]) => Promise<any>>(handler: T): T;
 //# sourceMappingURL=sentry.d.ts.map

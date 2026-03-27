@@ -83,7 +83,6 @@ export default function Signup() {
     try {
       // Check if Firebase is configured
       if (!isFirebaseConfigured) {
-        console.log('[Signup] Firebase not configured');
         setError("Account creation is currently unavailable. Please try the demo mode to explore the app.");
         return;
       }
@@ -170,10 +169,9 @@ export default function Signup() {
         updateProfile(user, { displayName: formData.fullName }),
         batch.commit(),
         sendEmailVerification(user, { url: `${window.location.origin}/verify-email` }),
-      ]).then(
-        () => console.log('[Signup] Background writes + verification email completed'),
-        (err: any) => console.warn('[Signup] Background write failed (non-fatal):', err?.code || err?.message),
-      );
+      ]).catch(() => {
+        // Non-fatal — Cloud Function onUserCreate also writes the user doc
+      });
 
     } catch (err: any) {
       console.error("Signup error:", err);

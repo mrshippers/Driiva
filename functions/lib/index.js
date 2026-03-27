@@ -63,7 +63,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.health = exports.seedAchievements = exports.onUserUpdateRecalcBetaEstimate = exports.calculateBetaEstimateForUser = exports.syncInsurancePolicy = exports.acceptInsuranceQuote = exports.getInsuranceQuote = exports.getAIInsights = exports.analyzeTripAI = exports.deleteUserAccount = exports.exportUserData = exports.batchClassifyTrips = exports.classifyTrip = exports.cancelTrip = exports.addPoolContribution = exports.initializePool = exports.syncDamoovTrips = exports.sendWeeklySummary = exports.recalculatePoolShares = exports.finalizePoolPeriod = exports.updateLeaderboards = exports.onPendingPaymentWrite = exports.syncTripOnComplete = exports.syncUserOnSignup = exports.onUserCreate = exports.onPoolShareWrite = exports.onPolicyWrite = exports.onTripStatusChange = exports.onTripCreate = exports.db = void 0;
+exports.health = exports.seedAchievements = exports.onUserUpdateRecalcBetaEstimate = exports.calculateBetaEstimateForUser = exports.syncInsurancePolicy = exports.acceptInsuranceQuote = exports.getInsuranceQuote = exports.getAIInsights = exports.analyzeTripAI = exports.deleteUserAccount = exports.exportUserData = exports.batchClassifyTrips = exports.classifyTrip = exports.cancelTrip = exports.addPoolContribution = exports.initializePool = exports.monitorTripHealth = exports.syncDamoovTrips = exports.sendWeeklySummary = exports.recalculatePoolShares = exports.finalizePoolPeriod = exports.updateLeaderboards = exports.onPendingPaymentWrite = exports.syncTripOnComplete = exports.syncUserOnSignup = exports.onUserCreate = exports.onPoolShareWrite = exports.onPolicyWrite = exports.onTripStatusChange = exports.onTripCreate = exports.db = void 0;
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -99,6 +99,8 @@ var notifications_1 = require("./scheduled/notifications");
 Object.defineProperty(exports, "sendWeeklySummary", { enumerable: true, get: function () { return notifications_1.sendWeeklySummary; } });
 var damoovSync_1 = require("./scheduled/damoovSync");
 Object.defineProperty(exports, "syncDamoovTrips", { enumerable: true, get: function () { return damoovSync_1.syncDamoovTrips; } });
+var watchdog_1 = require("./scheduled/watchdog");
+Object.defineProperty(exports, "monitorTripHealth", { enumerable: true, get: function () { return watchdog_1.monitorTripHealth; } });
 // ============================================================================
 // HTTP CALLABLE FUNCTIONS
 // ============================================================================

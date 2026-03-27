@@ -602,6 +602,19 @@ async function trackAPIUsage(tripId, userId, promptTokens, completionTokens, lat
             calledAt: admin.firestore.Timestamp.now(),
         };
         await db.collection(types_1.COLLECTION_NAMES.AI_USAGE_TRACKING).add(usageDoc);
+        functions.logger.info('[metric] ai_analysis', {
+            metric: 'ai_analysis',
+            tripId,
+            userId,
+            success,
+            latencyMs,
+            promptTokens,
+            completionTokens,
+            totalTokens,
+            estimatedCostCents,
+            model: CLAUDE_MODEL,
+            error,
+        });
     }
     catch (trackingError) {
         // Don't let tracking failure break the analysis pipeline

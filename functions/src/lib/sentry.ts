@@ -135,10 +135,10 @@ export function wrapFunction<TData, TResult>(
 /**
  * Wrap a Firestore trigger handler with Sentry error tracking.
  */
-export function wrapTrigger<T>(
-  handler: (...args: T[]) => Promise<void>,
-): (...args: T[]) => Promise<void> {
-  return async (...args: T[]): Promise<void> => {
+export function wrapTrigger<T extends (...args: any[]) => Promise<any>>(
+  handler: T,
+): T {
+  return (async (...args: any[]): Promise<void> => {
     initSentry();
 
     try {
@@ -154,5 +154,5 @@ export function wrapTrigger<T>(
 
       throw error;
     }
-  };
+  }) as unknown as T;
 }

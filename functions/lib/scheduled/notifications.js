@@ -44,6 +44,7 @@ const admin = __importStar(require("firebase-admin"));
 const types_1 = require("../types");
 const notifications_1 = require("../utils/notifications");
 const region_1 = require("../lib/region");
+const sentry_1 = require("../lib/sentry");
 const db = admin.firestore();
 /**
  * Send weekly driving summary to all active users.
@@ -53,7 +54,7 @@ exports.sendWeeklySummary = functions
     .region(region_1.EUROPE_LONDON)
     .pubsub.schedule('0 9 * * 1') // Every Monday 9 AM
     .timeZone('Europe/London')
-    .onRun(async () => {
+    .onRun((0, sentry_1.wrapTrigger)(async () => {
     functions.logger.info('[WeeklySummary] Starting weekly summary notifications');
     try {
         const usersSnap = await db
@@ -83,5 +84,5 @@ exports.sendWeeklySummary = functions
         functions.logger.error('[WeeklySummary] Fatal error:', err);
         throw err;
     }
-});
+}));
 //# sourceMappingURL=notifications.js.map

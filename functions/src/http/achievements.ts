@@ -8,6 +8,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { ACHIEVEMENT_DEFINITIONS } from '../utils/achievements';
 import { EUROPE_LONDON } from '../lib/region';
+import { wrapFunction } from '../lib/sentry';
 
 const db = admin.firestore();
 
@@ -17,7 +18,7 @@ const db = admin.firestore();
  */
 export const seedAchievements = functions
   .region(EUROPE_LONDON)
-  .https.onCall(async (_data, context) => {
+  .https.onCall(wrapFunction(async (_data, context) => {
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'Must be logged in.');
     }
@@ -38,4 +39,4 @@ export const seedAchievements = functions
     await batch.commit();
     functions.logger.info(`[seedAchievements] Seeded ${ACHIEVEMENT_DEFINITIONS.length} definitions`);
     return { seeded: ACHIEVEMENT_DEFINITIONS.length };
-  });
+  }));

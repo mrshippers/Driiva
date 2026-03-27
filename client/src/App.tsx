@@ -46,6 +46,7 @@ import { OnlineStatusProvider, useOnlineStatusContext } from './contexts/OnlineS
 import OfflineBanner from './components/OfflineBanner';
 import InstallPrompt from './components/InstallPrompt';
 import SplashScreen from './components/SplashScreen';
+import BrandedLoader from './components/BrandedLoader';
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -79,13 +80,9 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Minimal loading spinner shown while lazy pages load */
+/** Branded loader shown while lazy pages load — matches gradient from SplashScreen */
 function PageFallback() {
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="w-10 h-10 border-3 border-white/20 border-t-white rounded-full animate-spin" />
-    </div>
-  );
+  return <BrandedLoader />;
 }
 
 export default function App() {
@@ -106,6 +103,11 @@ export default function App() {
 
 function AppContent() {
   const { isOnline } = useOnlineStatusContext();
+  const { loading } = useAuth();
+
+  // Block all route rendering until auth state is resolved — prevents white
+  // flash and false redirects to /verify-email for already-authenticated users.
+  if (loading) return <BrandedLoader />;
 
   return (
     <div className={`App ${!isOnline ? 'pt-[52px]' : ''}`}>

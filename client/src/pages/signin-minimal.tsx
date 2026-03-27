@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 
 export default function SignIn() {
   const [, setLocation] = useLocation();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState(import.meta.env.DEV ? "driiva1" : "");
+  const [password, setPassword] = useState(import.meta.env.DEV ? "driiva1" : "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -77,6 +77,11 @@ export default function SignIn() {
             </Button>
           </form>
 
+          {import.meta.env.DEV && (
+            <div className="mt-6 text-center text-sm text-gray-400">
+              Dev credentials: driiva1 / driiva1
+            </div>
+          )}
         </div>
       </div>
     </div>

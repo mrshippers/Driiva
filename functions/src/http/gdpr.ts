@@ -12,6 +12,7 @@ import { COLLECTION_NAMES } from '../types';
 import { requireAuth, requireSelf } from './auth';
 import type { CallableContext } from './auth';
 import { EUROPE_LONDON } from '../lib/region';
+import { wrapFunction } from '../lib/sentry';
 
 const db = admin.firestore();
 const auth = admin.auth();
@@ -42,7 +43,7 @@ function serializeForExport(obj: unknown): unknown {
 export const exportUserData = functions
   .region(EUROPE_LONDON)
   .runWith({ timeoutSeconds: 300, memory: '512MB' })
-  .https.onCall(async (data: { userId?: string }, context: CallableContext) => {
+  .https.onCall(wrapFunction(async (data: { userId?: string }, context: CallableContext) => {
   requireAuth(context);
   const requestedUserId = data?.userId as string | undefined;
   requireSelf(context, requestedUserId);
@@ -137,7 +138,7 @@ export const exportUserData = functions
   };
 
   return exportPayload;
-});
+}));
 
 /**
  * Delete user account and all associated data (GDPR right to erasure).
@@ -145,7 +146,7 @@ export const exportUserData = functions
  */
 export const deleteUserAccount = functions
   .region(EUROPE_LONDON)
-  .https.onCall(async (data: { userId?: string }, context: CallableContext) => {
+  .https.onCall(wrapFunction(async (data: { userId?: string }, context: CallableContext) => {
   requireAuth(context);
   const requestedUserId = data?.userId as string | undefined;
   requireSelf(context, requestedUserId);
@@ -236,4 +237,4 @@ export const deleteUserAccount = functions
   functions.logger.info('User account deleted', { userId });
 
   return { success: true, message: 'Account and all associated data have been permanently deleted.' };
-});
+}));

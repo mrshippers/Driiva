@@ -58,6 +58,7 @@ const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const types_1 = require("../types");
 const region_1 = require("../lib/region");
+const sentry_1 = require("../lib/sentry");
 function getRootConfig() {
     const apiKey = process.env.ROOT_API_KEY;
     const productModuleKey = process.env.ROOT_PRODUCT_MODULE_KEY;
@@ -156,7 +157,7 @@ async function ensurePolicyholder(userId, user) {
  */
 exports.getInsuranceQuote = functions
     .region(region_1.EUROPE_LONDON)
-    .https.onCall(async (data, context) => {
+    .https.onCall((0, sentry_1.wrapFunction)(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Must be signed in');
     }
@@ -211,7 +212,7 @@ exports.getInsuranceQuote = functions
         drivingScore: Math.round(profile.currentScore),
         discountPercentage: Math.round(Math.max(0, Math.min(30, (profile.currentScore - 50) * 0.6))),
     };
-});
+}));
 /**
  * Accept a quote and bind a policy via Root Platform.
  *
@@ -220,7 +221,7 @@ exports.getInsuranceQuote = functions
  */
 exports.acceptInsuranceQuote = functions
     .region(region_1.EUROPE_LONDON)
-    .https.onCall(async (data, context) => {
+    .https.onCall((0, sentry_1.wrapFunction)(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Must be signed in');
     }
@@ -316,7 +317,7 @@ exports.acceptInsuranceQuote = functions
         startDate: rootPolicy.start_date,
         endDate: rootPolicy.end_date,
     };
-});
+}));
 /**
  * Fetch the user's current policy status from Root Platform.
  *
@@ -325,7 +326,7 @@ exports.acceptInsuranceQuote = functions
  */
 exports.syncInsurancePolicy = functions
     .region(region_1.EUROPE_LONDON)
-    .https.onCall(async (data, context) => {
+    .https.onCall((0, sentry_1.wrapFunction)(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Must be signed in');
     }
@@ -365,5 +366,5 @@ exports.syncInsurancePolicy = functions
         startDate: rootPolicy.start_date,
         endDate: rootPolicy.end_date,
     };
-});
+}));
 //# sourceMappingURL=insurance.js.map
