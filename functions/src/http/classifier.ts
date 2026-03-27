@@ -29,6 +29,23 @@ import { EUROPE_LONDON } from '../lib/region';
 
 const db = admin.firestore();
 
+/**
+ * Retry with exponential backoff for transient failures.
+ */
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (attempt === maxRetries - 1) throw e;
+      const delayMs = 1000 * Math.pow(2, attempt);
+      functions.logger.warn(`[classifier] Retry ${attempt + 1}/${maxRetries} after ${delayMs}ms`, { error: e });
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+  }
+  throw new Error('unreachable');
+}
+
 // Python classifier Cloud Function URL
 // Set via Firebase environment config: firebase functions:config:set classifier.url="https://..."
 const CLASSIFIER_URL = functions.config().classifier?.url || process.env.CLASSIFIER_URL;
@@ -464,11 +481,9 @@ export async function classifyCompletedTrip(
       MIN_DISTANCE_BETWEEN_STOP: 50, // 50 meters
     };
 
-    const classifierResponse = await callPythonClassifier(
-      tripId,
-      trip.userId,
-      formattedPoints,
-      settings
+    const classifierResponse = await withRetry(
+      () => callPythonClassifier(tripId, trip.userId, formattedPoints, settings),
+      3
     );
 
     // Save results if successful

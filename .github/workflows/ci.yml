@@ -90,10 +90,47 @@ jobs:
       - name: Run coverage
         run: npm run test:coverage
 
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: npx playwright test --project=chromium
+        env:
+          VITE_FIREBASE_API_KEY: fake-key
+          VITE_FIREBASE_AUTH_DOMAIN: fake.firebaseapp.com
+          VITE_FIREBASE_PROJECT_ID: fake-project
+          VITE_FIREBASE_STORAGE_BUCKET: fake.appspot.com
+          VITE_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+          VITE_FIREBASE_APP_ID: "1:000:web:000"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
-    needs: [lint-and-typecheck, build, functions-build, test]
+    needs: [lint-and-typecheck, build, functions-build, test, e2e]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     env:
       # ── Staging Firebase config (from GitHub Secrets) ────────────────────

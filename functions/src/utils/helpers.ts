@@ -403,6 +403,22 @@ function detectDrivingEvents(points: TripPoint[]): TripEvents {
     if (headingRate > SHARP_TURN_THRESHOLD && currSpeed > 5) {
       events.sharpTurnCount++;
     }
+
+    // Phone pickup detection from accelerometer data
+    // A phone pickup produces a distinctive pattern: sudden vertical acceleration spike
+    // (lifting phone) followed by reorientation. We detect this as a sharp change in
+    // accelerometer magnitude between consecutive samples while driving.
+    if (curr.ax !== undefined && curr.ay !== undefined && curr.az !== undefined &&
+        prev.ax !== undefined && prev.ay !== undefined && prev.az !== undefined &&
+        currSpeed > 2) { // Only detect while moving (>2 m/s ≈ 4.5 mph)
+      const PHONE_PICKUP_ACCEL_THRESHOLD = 4.0; // m/s² magnitude change threshold
+      const prevMag = Math.sqrt(prev.ax * prev.ax + prev.ay * prev.ay + prev.az * prev.az);
+      const currMag = Math.sqrt(curr.ax * curr.ax + curr.ay * curr.ay + curr.az * curr.az);
+      const magDelta = Math.abs(currMag - prevMag);
+      if (magDelta > PHONE_PICKUP_ACCEL_THRESHOLD) {
+        events.phonePickupCount++;
+      }
+    }
   }
 
   return events;

@@ -14,6 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:e2e": "npx playwright test",
+    "test:e2e:ui": "npx playwright test --ui",
     "test:auth": "node test-auth.js",
     "create:user": "node create-user.js",
     "create-firebase-test-users": "tsx scripts/create-firebase-test-users.ts",
@@ -106,6 +108,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/typography": "^0.5.15",
     "@tailwindcss/vite": "^4.1.3",
     "@testing-library/dom": "^10.4.1",
