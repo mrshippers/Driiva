@@ -22,7 +22,7 @@ jobs:
     name: Lint & Type Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -44,7 +44,7 @@ jobs:
       VITE_FIREBASE_PROJECT_ID: driiva
       VITE_FIREBASE_APP_ID: 1:000000000000:web:ci-placeholder
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -61,7 +61,7 @@ jobs:
     name: Build (Cloud Functions)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -85,7 +85,7 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -120,7 +120,7 @@ jobs:
       VITE_FEATURE_COMMUNITY_POOL: "true"
       VITE_FEATURE_LEADERBOARD: "true"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -214,7 +214,7 @@ jobs:
       VITE_FEATURE_COMMUNITY_POOL: "true"
       VITE_FEATURE_LEADERBOARD: "true"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
