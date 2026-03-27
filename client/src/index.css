@@ -32,6 +32,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background: linear-gradient(180deg, #F9FAFB 0%, #F3F4F6 100%);
   touch-action: manipulation;
+  overscroll-behavior: contain;
+}
+
+/* Prevent overscroll bounce on scroll containers */
+.overscroll-contain {
+  overscroll-behavior: contain;
 }
 
 /* Touch optimizations for all interactive elements */

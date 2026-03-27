@@ -11,14 +11,14 @@
  *   - Demo mode support for testing
  */
 
-import { useState, lazy, Suspense, useEffect } from 'react';
+import { useState, lazy, Suspense, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { collection, doc, getDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
-import { 
-  Car, FileText, AlertCircle, TrendingUp, ChevronRight, 
-  Bell, ChevronDown, ChevronUp, MapPin, Users, Trophy, Target, 
+import {
+  Car, FileText, AlertCircle, TrendingUp, ChevronRight,
+  Bell, ChevronDown, ChevronUp, MapPin, Users, Trophy, Target,
   Play, Navigation, RefreshCw, Shield, ExternalLink
 } from 'lucide-react';
 import { PageWrapper } from '../components/PageWrapper';
@@ -33,6 +33,11 @@ import { useToast } from '@/hooks/use-toast';
 import { BetaEstimateCard } from '@/components/BetaEstimateCard';
 import ScoreRing from '@/components/ScoreRing';
 import { FinancialPromotionDisclaimer } from '@/components/FinancialPromotionDisclaimer';
+import { AnimatedNumber } from '@/components/AnimatedNumber';
+import { PullToRefreshIndicator } from '@/components/PullToRefresh';
+import { ScoreCardShimmer } from '@/components/Shimmer';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useHaptics } from '@/hooks/useHaptics';
 import { container, item } from '@/lib/animations';
 
 const LeafletMap = lazy(() => import('../components/LeafletMap'));
@@ -73,6 +78,10 @@ interface DemoUser {
 // ============================================================================
 
 function ScoreCardSkeleton() {
+  return <ScoreCardShimmer />;
+}
+
+function _LegacyScoreCardSkeleton() {
   return (
     <div className="dashboard-glass-card mb-4 animate-pulse">
       <div className="flex items-center justify-between mb-4">
@@ -233,6 +242,22 @@ export default function Dashboard() {
     },
   });
 
+  // Haptics
+  const haptics = useHaptics();
+
+  // Pull-to-refresh
+  const handlePullRefresh = useCallback(async () => {
+    refresh();
+    refreshBetaEstimate();
+    // Small delay so the spinner is visible
+    await new Promise(r => setTimeout(r, 800));
+  }, [refresh, refreshBetaEstimate]);
+
+  const pullToRefresh = usePullToRefresh({
+    onRefresh: handlePullRefresh,
+    disabled: isDemoMode,
+  });
+
   // Handle logout — navigate FIRST to prevent ProtectedRoute from intercepting
   const handleLogout = () => {
     setShowDropdown(false);
@@ -357,7 +382,14 @@ export default function Dashboard() {
         </PageWrapper>
       ) : (
     <PageWrapper>
-      <div className="pb-24 text-white">
+      <div className="pb-24 text-white" {...pullToRefresh.handlers}>
+        {/* Pull-to-refresh indicator */}
+        <PullToRefreshIndicator
+          pullDistance={pullToRefresh.pullDistance}
+          progress={pullToRefresh.progress}
+          refreshing={pullToRefresh.refreshing}
+        />
+
         {/* Push notification opt-in — only when permission not yet asked/granted */}
         {!isDemoMode && firebaseUserId && notificationPermission === 'default' && (
           <motion.div
@@ -740,14 +772,16 @@ export default function Dashboard() {
           )}
           
           {/* Start Trip Button */}
-          <button
-            onClick={() => setLocation('/trip-recording')}
-            className="w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 text-emerald-300 font-medium hover:from-emerald-500/30 hover:to-teal-500/30 transition-all flex items-center justify-center gap-2"
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+            onClick={() => { haptics.medium(); setLocation('/trip-recording'); }}
+            className="w-full mt-4 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 text-emerald-300 font-semibold hover:from-emerald-500/30 hover:to-teal-500/30 transition-all flex items-center justify-center gap-2"
           >
             <Play className="w-4 h-4" />
             Start New Trip
             <Navigation className="w-4 h-4" />
-          </button>
+          </motion.button>
         </motion.div>
 
         {/* Community Pool Card */}
@@ -775,11 +809,11 @@ export default function Dashboard() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-white/60 text-sm">Total Pool</span>
-                <span className="text-white font-semibold">£{poolTotal.toLocaleString()}</span>
+                <AnimatedNumber value={poolTotal} prefix="£" locale className="text-white font-semibold" />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-white/60 text-sm">Your Projected Refund</span>
-                <span className="text-emerald-400 font-bold">£{poolShare.toFixed(2)}</span>
+                <AnimatedNumber value={poolShare} prefix="£" decimals={2} className="text-emerald-400 font-bold" />
               </div>
               {userSharePercentage > 0 && (
                 <div className="flex items-center justify-between">
@@ -836,7 +870,7 @@ export default function Dashboard() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-white/60 text-sm">Current Refund</span>
-              <span className="text-emerald-400 font-bold text-xl">£{surplusProjection}</span>
+              <AnimatedNumber value={surplusProjection} prefix="£" className="text-emerald-400 font-bold text-xl" />
             </div>
             <div className="flex items-center justify-between text-xs text-white/50">
               <span>Based on {drivingScore}% score</span>

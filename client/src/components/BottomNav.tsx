@@ -1,6 +1,7 @@
 import { useLocation, Link } from 'wouter';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Home, Map, Gift, User } from 'lucide-react';
+import { haptic } from '@/hooks/useHaptics';
 
 const navItems = [
   { icon: Home, label: 'Home', path: '/dashboard' },
@@ -9,83 +10,97 @@ const navItems = [
   { icon: User, label: 'Profile', path: '/profile' },
 ] as const;
 
-export const BottomNav: React.FC = () => {
+interface BottomNavProps {
+  /** Badge counts keyed by path */
+  badges?: Record<string, number>;
+}
+
+export const BottomNav: React.FC<BottomNavProps> = ({ badges }) => {
   const [location] = useLocation();
-  
+
   return (
-    <nav 
+    <nav
       className="fixed bottom-0 left-0 right-0 z-50"
-      style={{ 
+      style={{
         paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 4px)',
         willChange: 'transform',
-        transform: 'translateZ(0)'
+        transform: 'translateZ(0)',
       }}
     >
-      <div 
-        className="border-t border-white/[0.08]"
+      <div
+        className="border-t border-white/[0.06]"
         style={{
-          background: 'rgba(15, 23, 42, 0.55)',
-          backdropFilter: 'blur(24px) saturate(140%)',
-          WebkitBackdropFilter: 'blur(24px) saturate(140%)',
-          boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+          background: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(28px) saturate(150%)',
+          WebkitBackdropFilter: 'blur(28px) saturate(150%)',
+          boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
         }}
       >
-        <div className="max-w-md mx-auto flex justify-around py-2 px-2">
+        <div className="max-w-md mx-auto flex justify-around py-1.5 px-2">
           {navItems.map(({ icon: Icon, label, path }) => {
-            const isActive = location === path;
-            
+            const isActive = location === path ||
+              (path === '/trips' && location.startsWith('/trips/'));
+            const badge = badges?.[path];
+
             return (
               <Link
                 key={path}
                 href={path}
-                className="relative min-h-[44px] min-w-[44px]"
+                onClick={() => {
+                  if (!isActive) haptic('selection');
+                }}
+                className="relative min-h-[48px] min-w-[48px]"
               >
                 <motion.div
-                  whileTap={{ scale: 0.92 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                  className="flex flex-col items-center gap-1 px-4 py-2 justify-center"
+                  whileTap={{ scale: 0.88 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                  className="flex flex-col items-center gap-0.5 px-4 py-1.5 justify-center"
                 >
-                  <div className={`
-                    relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-150
-                    ${isActive 
-                      ? 'scale-105' 
-                      : 'opacity-60 hover:opacity-100 hover:scale-105'
-                    }
-                  `}>
+                  <div className="relative w-10 h-8 flex items-center justify-center">
+                    {/* Active pill background */}
                     {isActive && (
-                      <motion.div 
-                        layoutId="nav-active-bg"
-                        className="absolute inset-0 rounded-xl"
+                      <motion.div
+                        layoutId="nav-active-pill"
+                        className="absolute inset-x-0 -inset-y-0.5 rounded-full"
                         style={{
-                          background: 'rgba(16, 185, 129, 0.15)',
-                          border: '1px solid rgba(16, 185, 129, 0.2)',
+                          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(6, 182, 212, 0.12) 100%)',
+                          border: '1px solid rgba(16, 185, 129, 0.15)',
+                          boxShadow: '0 0 12px rgba(16, 185, 129, 0.1)',
                         }}
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 28 }}
                       />
                     )}
-                    
-                    <Icon className={`w-5 h-5 relative z-10 transition-colors duration-150 ${
-                      isActive 
-                        ? 'text-emerald-400 drop-shadow-sm' 
-                        : 'text-white/60'
-                    }`} />
+
+                    <Icon
+                      className={`w-[22px] h-[22px] relative z-10 transition-all duration-200 ${
+                        isActive
+                          ? 'text-emerald-400'
+                          : 'text-white/45'
+                      }`}
+                      strokeWidth={isActive ? 2.2 : 1.8}
+                    />
+
+                    {/* Notification badge */}
+                    {badge && badge > 0 && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute -top-1 -right-1 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-red-500 border border-[rgba(15,23,42,0.8)] px-1"
+                      >
+                        <span className="text-[9px] font-bold text-white leading-none">
+                          {badge > 99 ? '99+' : badge}
+                        </span>
+                      </motion.div>
+                    )}
                   </div>
-                  
-                  <span className={`text-[10px] font-medium transition-colors duration-150 ${
-                    isActive 
-                      ? 'text-emerald-400' 
-                      : 'text-white/40'
+
+                  <span className={`text-[10px] font-medium transition-all duration-200 ${
+                    isActive
+                      ? 'text-emerald-400'
+                      : 'text-white/35'
                   }`}>
                     {label}
                   </span>
-                  
-                  {isActive && (
-                    <motion.div
-                      layoutId="nav-indicator"
-                      className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50"
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    />
-                  )}
                 </motion.div>
               </Link>
             );

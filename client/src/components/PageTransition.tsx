@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ReactNode } from "react";
 
 interface PageTransitionProps {
@@ -9,25 +9,22 @@ interface PageTransitionProps {
 const pageVariants = {
   initial: {
     opacity: 0,
-    x: 20,
-    scale: 0.98
+    y: 12,
   },
   in: {
     opacity: 1,
-    x: 0,
-    scale: 1
+    y: 0,
   },
   out: {
     opacity: 0,
-    x: -20,
-    scale: 0.98
+    y: -8,
   }
 };
 
 const pageTransition = {
-  type: "tween",
-  ease: "anticipate",
-  duration: 0.3
+  type: "tween" as const,
+  ease: [0.16, 1, 0.3, 1], // smoothDecel
+  duration: 0.3,
 };
 
 export default function PageTransition({ children, className = "" }: PageTransitionProps) {

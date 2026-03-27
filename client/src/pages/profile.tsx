@@ -12,11 +12,12 @@ import { ChevronDown, Bell, Pencil, Check, X, Loader2, Shield } from "lucide-rea
 import { timing, easing } from "@/lib/animations";
 import { useAuth } from '../contexts/AuthContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { Shimmer } from '@/components/Shimmer';
+import { AnimatedNumber } from '@/components/AnimatedNumber';
+import { useHaptics } from '@/hooks/useHaptics';
 
 function Skeleton({ className = "" }: { className?: string }) {
-  return (
-    <div className={`animate-pulse bg-white/[0.08] rounded ${className}`} />
-  );
+  return <Shimmer className={className} />;
 }
 
 function DetailRow({ label, value, loading }: { label: string; value: string; loading?: boolean }) {
@@ -32,9 +33,13 @@ function DetailRow({ label, value, loading }: { label: string; value: string; lo
   );
 }
 
-function StatCard({ value, label, loading }: { value: string | number; label: string; loading?: boolean }) {
+function StatCard({ value, label, loading, numericValue }: { value: string | number; label: string; loading?: boolean; numericValue?: number }) {
   return (
-    <div className="backdrop-blur-xl bg-white/[0.03] border border-white/[0.05] rounded-xl p-4 text-center">
+    <motion.div
+      className="backdrop-blur-xl bg-white/[0.03] border border-white/[0.05] rounded-xl p-4 text-center"
+      whileTap={{ scale: 0.97 }}
+      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+    >
       {loading ? (
         <>
           <Skeleton className="h-7 w-12 mx-auto mb-2" />
@@ -42,11 +47,15 @@ function StatCard({ value, label, loading }: { value: string | number; label: st
         </>
       ) : (
         <>
-          <p className="text-2xl font-bold text-white mb-1">{value}</p>
+          {numericValue !== undefined ? (
+            <AnimatedNumber value={numericValue} className="text-2xl font-bold text-white mb-1" />
+          ) : (
+            <p className="text-2xl font-bold text-white mb-1">{value}</p>
+          )}
           <p className="text-xs text-white/50">{label}</p>
         </>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -165,6 +174,7 @@ interface EditableFields {
 export default function Profile() {
   const [, setLocation] = useLocation();
   const { user, logout } = useAuth();
+  const haptics = useHaptics();
   const [showDropdown, setShowDropdown] = useState(false);
   const [locationTracking, setLocationTracking] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
@@ -247,6 +257,7 @@ export default function Profile() {
   };
 
   const handleLogout = () => {
+    haptics.medium();
     setShowDropdown(false);
     setLocation("/");
     logout();

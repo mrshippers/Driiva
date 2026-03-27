@@ -8,6 +8,10 @@ import RewardsTimeline from "@/components/RewardsTimeline";
 import type { RewardState } from "@/components/RewardsTimeline";
 import { Gift, TrendingUp, Check, Bell, ChevronDown, Loader2 } from "lucide-react";
 import { container, item, timing, easing, microInteractions } from "@/lib/animations";
+import { SmoothTabs } from "@/components/SmoothTabs";
+import { Shimmer } from "@/components/Shimmer";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
+import { useHaptics } from "@/hooks/useHaptics";
 import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from "../hooks/useUserProfile";
 import { DEFAULT_DRIVING_PROFILE } from '../../../shared/firestore-types';
@@ -17,7 +21,7 @@ import { isFirebaseConfigured } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 
 function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse bg-white/[0.08] rounded ${className}`} />;
+  return <Shimmer className={className} />;
 }
 
 interface DisplayAchievement {
@@ -281,28 +285,22 @@ export default function Rewards() {
           </GlassCard>
         </motion.div>
 
-        {/* Tab switcher */}
+        {/* Tab switcher — smooth sliding indicator */}
         <motion.div
           className="mb-6"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: timing.interaction, duration: timing.pageTransition, ease: easing.button }}
         >
-          <GlassCard className="p-1 flex gap-1">
-            {["achievements", "rewards", "progress"].map((tab) => (
-              <motion.button
-                key={tab}
-                onClick={() => setActiveTab(tab as any)}
-                className={`flex-1 py-1.5 px-3 rounded-full font-semibold text-xs tracking-wide transition-all duration-150 ${activeTab === tab
-                  ? "bg-emerald-500/[0.18] text-emerald-300 border border-emerald-400/50 shadow-[inset_0_1px_0_rgba(52,211,153,0.18)]"
-                  : "text-white/40 hover:text-white/70 hover:bg-white/[0.09] border border-transparent"
-                  }`}
-                whileTap={microInteractions.tap}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </motion.button>
-            ))}
-          </GlassCard>
+          <SmoothTabs
+            tabs={[
+              { id: 'achievements', label: 'Achievements' },
+              { id: 'rewards', label: 'Rewards' },
+              { id: 'progress', label: 'Progress' },
+            ]}
+            activeTab={activeTab}
+            onChange={(id) => setActiveTab(id as any)}
+          />
         </motion.div>
 
         <AnimatePresence mode="wait">
