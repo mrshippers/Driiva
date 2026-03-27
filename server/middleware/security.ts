@@ -11,7 +11,7 @@ const normalizeIp = (req: express.Request): string =>
 // Rate limiting configuration
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit to 5 requests
+  max: 5,
   message: 'Too many authentication attempts, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
@@ -20,7 +20,7 @@ export const authLimiter = rateLimit({
 
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit to 100 requests
+  max: 100,
   message: 'Too many requests from this IP, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
@@ -30,7 +30,7 @@ export const apiLimiter = rateLimit({
 // Webhook limiter for Stripe
 export const webhookLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 10, // limit to 10 requests
+  max: 10,
   skipSuccessfulRequests: true,
   keyGenerator: normalizeIp,
 });
@@ -38,7 +38,7 @@ export const webhookLimiter = rateLimit({
 // General API limiter for trip data
 export const tripDataLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 30, // limit to 30 requests
+  max: 30,
   message: 'Too many trip data requests',
   keyGenerator: normalizeIp,
 });

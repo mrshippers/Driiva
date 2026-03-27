@@ -1,0 +1,32 @@
+version: 2
+updates:
+  # Root package (client + server)
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      dev-deps:
+        dependency-type: development
+      firebase:
+        patterns:
+          - "firebase*"
+          - "@firebase/*"
+
+  # Cloud Functions
+  - package-ecosystem: npm
+    directory: /functions
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
