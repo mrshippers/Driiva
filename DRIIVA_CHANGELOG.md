@@ -5,6 +5,103 @@
 
 ## Entries
 
+### 2026-03-25 – CTO Due Diligence: Round 1 (14 deal-breakers)
+
+Full codebase audit for £500K investment. 14 deal-breakers identified and fixed in one sprint.
+
+**Regulatory (FCA)**
+- Replaced fake FCA registration number (`DRV123456`) with env var `VITE_FCA_REGISTRATION_NUMBER` + sandbox disclaimer (`PolicyDownload.tsx`)
+- Created IPID page at `/ipid` — 12 IDD-required sections (`client/src/pages/ipid.tsx`, `App.tsx`)
+- Added underwriter disclosure, 14-day cooling-off, FOS complaints procedure (`terms.tsx` sections 9–11)
+
+**Financial Integrity**
+- Fixed float arithmetic on money: `calculateProjectedRefund()` now uses basis-point integer math (`helpers.ts`)
+- Standardised pool share precision to 4 decimal places everywhere (`admin.ts`, `triggers/pool.ts`)
+- Removed duplicate Haversine from `helpers.ts`, replaced with import from `functions/src/lib/haversine.ts`
+
+**Security**
+- GPS tripPoints encrypted at rest with AES-256-GCM when `GPS_ENCRYPTION_KEY` set (`functions/src/lib/crypto.ts`, `trips.ts`)
+- Upgraded `firebase-admin` from `^10.3.0` to `^12.0.0` (fixes critical CVEs)
+- Sanitised all 29 error message leaks in `server/routes.ts` via `safeErrorResponse()` helper
+
+**GDPR / Compliance**
+- Created incident response plan (`docs/INCIDENT_RESPONSE.md`, 389 lines)
+- Created DPIA for telematics processing (`docs/DPIA.md`)
+- Added `enforceDataRetention` scheduled function — deletes tripPoints after 90 days
+- Privacy policy now names all 7 data processors (added Anthropic, Stripe, Vercel, Sentry)
+
+**Operational**
+- Added `dailyFirestoreBackup` scheduled function — GCS export at 2 AM daily
+- Added 2 missing Firestore composite indexes for watchdog queries (`firestore.indexes.json`)
+
+**Testing**
+- Added 22 `shared/tripProcessor.test.ts` unit tests for canonical Haversine/distance/duration
+- Enforced coverage thresholds: 70% lines, 65% branches, 70% functions (both vitest configs)
+
+**Verification:** 269 tests pass, TypeScript strict clean, build succeeds.
+
+---
+
+### 2026-03-25 – CTO Due Diligence: Round 2 (10 re-audit issues)
+
+Post-remediation re-audit found 10 additional HIGH+ issues. All fixed.
+
+**Analytics & Consent (CRITICAL)**
+- Firebase Analytics now consent-gated — `getAnalytics()` only fires after user accepts (`firebase.ts`)
+- New `CookieConsent.tsx` banner component with Accept/Reject, persists to localStorage
+- Exported `initAnalyticsWithConsent()`, `rejectAnalyticsConsent()`, `hasAnalyticsConsent()` helpers
+
+**Security**
+- GDPR delete requires re-authentication within 5 minutes via `auth_time` check (`gdpr.ts`)
+- Stripe `create-subscription` validates price against server-side Firestore estimate (1% tolerance)
+- Stripe `create-checkout` validates `priceId` against `STRIPE_ALLOWED_PRICE_IDS` env whitelist
+- Replaced in-memory AI Coach rate limit `Map<>` with `express-rate-limit` middleware (`coachLimiter`)
+- Fixed username enumeration: `firestore.rules` usernames read now requires authentication
+- Truncated PII in console.logs — Firebase UIDs and Stripe customer IDs show last 4–6 chars only
+- CORS fails closed in production if `CORS_ORIGINS` env var not set (`server/app.ts`)
+
+**Reliability**
+- Firestore→Neon sync retry with exponential backoff — 3 attempts (1s, 2s, 4s) (`syncTripOnComplete.ts`)
+
+**Compliance**
+- GDPR Article 22 disclosure added to privacy policy — automated decision-making rights + human review via dpo@driiva.co.uk
+
+**Verification:** 269 tests pass, TypeScript strict clean, build succeeds.
+
+---
+
+### 2026-03-25 – CTO Due Diligence: Round 3 (final gaps)
+
+Three remaining MEDIUM gaps closed.
+
+**Phone Pickup Detection**
+- `detectDrivingEvents()` now analyses accelerometer data (`ax`, `ay`, `az`) to detect phone pickups
+- Uses magnitude delta threshold (4.0 m/s²) while driving (>2 m/s)
+- Feeds into existing `computePhoneUsageScore()` — phone usage score now real, not hardcoded 100
+- Backward-compatible: defaults to 100 when no accelerometer data present
+
+**Classifier Retry**
+- `classifyCompletedTrip()` now uses `withRetry()` — 3 attempts with exponential backoff (1s, 2s, 4s)
+- Transient classifier downtime no longer causes permanent segmentation data loss
+
+**Playwright E2E Test Suite**
+- Installed `@playwright/test`, created `playwright.config.ts` (Chromium + mobile Chrome)
+- 16 E2E smoke tests across 6 groups: public pages, auth flow, cookie consent, navigation, API health, mobile responsiveness
+- Added `test:e2e` and `test:e2e:ui` scripts to `package.json`
+- Added E2E job to CI pipeline with Playwright artifact upload
+
+**Verification:** 269 unit tests pass, TypeScript strict clean, build succeeds.
+
+---
+
+### 2026-03-25 – CTO Due Diligence Report
+
+- Created `CTO_DUE_DILIGENCE.md` — comprehensive codebase review across security, FCA compliance, GDPR, financial integrity, testing, and operational readiness
+- 14 deal-breakers identified, 6-week remediation plan proposed
+- Investment recommendation: conditional pass
+
+---
+
 ### 2026-03-02 – Damoov Telematics + Feedback + Compliance
 
 **Phase 1 — Damoov Integration (server-side)**

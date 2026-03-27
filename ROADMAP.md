@@ -58,7 +58,7 @@
 - [x] AI Driving Coach feedback widget — *done: AIFeedbackWidget component with round-robin engagement comments, Perplexity API integration (8s timeout, 1 retry, silent fallback), Firebase ai_feedback_events logging, glassmorphic UI with pulsing AI orb; wired into trip-detail page*
 - [x] Rewards Programme redesign — *done: 5-tier RewardsTimeline component (#Day5 Tesco £5, #Day10 RAC trial, #TeamDriiva Halfords £10, #Month3 500 Nectar pts, #Anniversary Amazon £25); vertical mobile / horizontal desktop; lock/unlock/claimed states; FCA-compliant framing; Web Share API; wired into rewards page*
 - [x] Card/Default unification — *done: GlassCard component now uses dashboard-glass-card spec; unified bg/border/radius/padding/shadow across all card instances*
-- [ ] Phone usage detection for scoring
+- [x] Phone usage detection for scoring — *done: `detectDrivingEvents()` in `functions/src/utils/helpers.ts` now analyses accelerometer magnitude deltas (threshold 4.0 m/s²) to detect phone pickups while driving (>2 m/s). Feeds into existing `computePhoneUsageScore()`. Graceful: defaults to 100 when no sensor data available.*
 - [x] Build achievements backend — *done: 8 achievement definitions in functions/src/utils/achievements.ts; checkAndUnlockAchievements called after trip completion; Firestore collections (achievements/{id}, users/{uid}/achievements/{achId}); seedAchievements admin callable; frontend wired to real data*
 - [x] Weather API integration — *done: Open-Meteo archive API in functions/src/utils/weather.ts; maps WMO codes to clear/cloudy/rain/snow/fog/storm; 3s timeout + graceful null fallback; wired into both trip triggers in trips.ts*
 
@@ -81,7 +81,7 @@ These are known gaps that don't have tickets yet:
 - [ ] **Stripe wiring** — dependencies installed, tables exist, webhooks scaffolded. Premium payments and pool contributions not yet connected end-to-end.
 - [x] **Profile page real data** — *done: profile.tsx reads from useDashboardData hook; edit mode for name/phone/vehicle writes to Firestore via updateDoc; loading skeletons on every section; error state with retry*
 - [x] **Trip route visualisation** — TripRouteMap component + TripDetail page wired.
-- [ ] **Phone pickup detection** — scoring has a 10% weight for phone usage but it's hardcoded to 100 (no penalty). Needs accelerometer pattern recognition to detect phone pickups while driving.
+- [x] **Phone pickup detection** — *done: accelerometer-based detection in `detectDrivingEvents()`. Magnitude delta threshold (4.0 m/s²) while driving (>2 m/s). Feeds `phonePickupCount` into `computePhoneUsageScore()` (10% weight). Backward-compatible: defaults to 100 when no sensor data.*
 - [x] **Push notifications** — FCM wired end-to-end: trip complete, achievement unlock, weekly summary.
 - [x] **Leaderboard rank recalculation** — Firestore scheduled function now filters weekly/monthly by lastTripAt period bounds and uses dense ranking for tied scores. PG table remains stale (not primary).
 - [x] GDPR data export — implemented GET /api/gdpr/export/:userId; returns JSON of all user data
