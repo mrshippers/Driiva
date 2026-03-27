@@ -46,6 +46,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { OnlineStatusProvider, useOnlineStatusContext } from './contexts/OnlineStatusContext';
 import OfflineBanner from './components/OfflineBanner';
 import InstallPrompt from './components/InstallPrompt';
+const CookieConsent = lazy(() => import('./components/CookieConsent'));
 import SplashScreen from './components/SplashScreen';
 import BrandedLoader from './components/BrandedLoader';
 
@@ -114,6 +115,7 @@ function AppContent() {
     <div className={`App ${!isOnline ? 'pt-[52px]' : ''}`}>
       <OfflineBanner />
       <InstallPrompt />
+      <Suspense fallback={null}><CookieConsent /></Suspense>
       <div
         className="driiva-gradient-bg"
         style={{

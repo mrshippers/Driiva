@@ -152,7 +152,22 @@ export const deleteUserAccount = functions
   requireSelf(context, requestedUserId);
   const userId = requestedUserId!;
 
-  // TODO: Rate limiting – consider requiring re-auth or delay before delete
+  // Require recent authentication (within last 5 minutes) to prevent
+  // account deletion via stolen/stale session tokens
+  const authTimeSec = context.auth!.token.auth_time;
+  if (typeof authTimeSec !== 'number') {
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      'Unable to verify authentication freshness. Please sign in again and retry.'
+    );
+  }
+  const fiveMinutesAgo = Math.floor(Date.now() / 1000) - 300;
+  if (authTimeSec < fiveMinutesAgo) {
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      'For security, please re-authenticate before deleting your account. Sign out and sign back in, then try again within 5 minutes.'
+    );
+  }
 
   functions.logger.info('Deleting user account', { userId });
 

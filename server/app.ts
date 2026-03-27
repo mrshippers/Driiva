@@ -8,6 +8,11 @@ const app = express();
 
 app.use(securityHeaders);
 
+// Fail-closed: require explicit CORS configuration in production
+if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGINS) {
+  throw new Error('CORS_ORIGINS environment variable must be set in production');
+}
+
 const CORS_ORIGINS = (process.env.CORS_ORIGINS ?? "http://localhost:5173,http://localhost:3000,http://localhost:3001,http://localhost:3002,http://127.0.0.1:5173,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:3002")
   .split(",")
   .map((o) => o.trim())

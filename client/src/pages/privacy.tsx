@@ -170,6 +170,27 @@ export default function Privacy() {
                 "Comply with legal and regulatory obligations (e.g. FCA, ICO).",
               ]}
             />
+            <SubSection title="Automated decision-making and profiling">
+              <P>
+                We use automated processing to calculate your driving safety
+                score based on telematics data collected during your trips.
+                This score may influence your insurance premium and your
+                eligibility for refunds from the community pool.
+              </P>
+              <P>
+                Under UK GDPR Article 22, you have the right to request human
+                review of any automated decision that significantly affects
+                you. To request a review, contact our Data Protection Officer
+                at{" "}
+                <a
+                  href="mailto:dpo@driiva.co.uk"
+                  className="text-teal-400 hover:underline"
+                >
+                  dpo@driiva.co.uk
+                </a>
+                . We will review the decision within 30 days.
+              </P>
+            </SubSection>
           </Section>
 
           <Section title="4. Lawful basis for processing (UK GDPR)">

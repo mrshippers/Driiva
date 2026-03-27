@@ -21,7 +21,7 @@ import { insertTripSchema, insertIncidentSchema } from "@shared/schema";
 import { z } from "zod";
 import { authService } from "./auth";
 import { webauthnService } from "./webauthn";
-import { authLimiter, tripDataLimiter, webhookLimiter } from "./middleware/security";
+import { authLimiter, tripDataLimiter, webhookLimiter, coachLimiter } from "./middleware/security";
 import { gdprDeleteLimiter, poolModificationLimiter } from "./middleware/rateLimiter";
 import {
   verifyFirebaseAuth,
@@ -646,23 +646,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   // AI Driiva — structured driving feedback per trip
   // -------------------------------------------------------------------------
 
-  const coachRateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-  app.post("/api/ai/coach", requireAuth, async (req: AuthRequest, res) => {
+  app.post("/api/ai/coach", requireAuth, coachLimiter, async (req: AuthRequest, res) => {
     try {
       const uid = req.auth!.uid;
-
-      // Simple in-memory rate limit: 10 requests / hour / user
-      const now = Date.now();
-      const bucket = coachRateLimitMap.get(uid);
-      if (bucket && bucket.resetAt > now) {
-        if (bucket.count >= 10) {
-          return res.status(429).json({ message: "Rate limit exceeded. Try again later." });
-        }
-        bucket.count++;
-      } else {
-        coachRateLimitMap.set(uid, { count: 1, resetAt: now + 3600_000 });
-      }
 
       const {
         score,
@@ -852,6 +838,31 @@ export async function registerRoutes(app: Express): Promise<void> {
         }
       }
 
+      // Server-side price validation: compare against stored estimate if available
+      if (annualPremiumCents !== undefined) {
+        try {
+          const { getFirebaseAdmin } = await import('./lib/firebase-admin');
+          const adminApp = getFirebaseAdmin();
+          if (adminApp) {
+            const estimateSnap = await adminApp.firestore()
+              .collection('users').doc(uid)
+              .collection('betaPricing').doc('currentEstimate')
+              .get();
+            if (estimateSnap.exists) {
+              const serverEstimatePence = Math.round((estimateSnap.data()!.estimatedPremium as number) * 100);
+              if (serverEstimatePence > 0) {
+                const diff = Math.abs(annualPremiumCents - serverEstimatePence) / serverEstimatePence;
+                if (diff > 0.01) { // 1% tolerance
+                  return res.status(400).json({ message: "Price mismatch — please refresh your quote and try again." });
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('[Stripe] Could not validate price against server estimate:', err);
+        }
+      }
+
       // Upsert Stripe customer
       let customerId = user.stripeCustomerId ?? undefined;
       if (!customerId) {
@@ -936,6 +947,13 @@ export async function registerRoutes(app: Express): Promise<void> {
       const uid = req.auth!.uid;
       const { priceId, successUrl, cancelUrl } = req.body;
       if (!priceId) return res.status(400).json({ message: "priceId is required" });
+
+      // Validate priceId against server-side whitelist if configured
+      const allowedPriceIds = (process.env.STRIPE_ALLOWED_PRICE_IDS ?? '')
+        .split(',').map(s => s.trim()).filter(Boolean);
+      if (allowedPriceIds.length > 0 && !allowedPriceIds.includes(priceId)) {
+        return res.status(400).json({ message: "Invalid priceId" });
+      }
 
       const user = await storage.getUserByFirebaseUid(uid);
       if (!user) return res.status(404).json({ message: "User not found" });
@@ -1026,7 +1044,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           const invoice = event.data.object;
           const customerId = invoice.customer as string;
           const subscriptionId = invoice.subscription as string;
-          console.log(`[Stripe webhook] Payment succeeded for customer ${customerId}`);
+          console.log(`[Stripe webhook] Payment succeeded for customer ...${customerId.slice(-4)}`);
 
           // Retrieve subscription to get quoteId from metadata
           let quoteId: string | undefined;
@@ -1118,7 +1136,7 @@ async function handleStripePaymentSucceeded(
       return;
     }
 
-    console.log(`[Integration] Payment succeeded for ${user.firebaseUid} — writing pendingPayment`, { quoteId });
+    console.log(`[Integration] Payment succeeded for ...${user.firebaseUid.slice(-6)} — writing pendingPayment`, { quoteId });
 
     const adminLib = await import('./lib/firebase-admin');
     const adminApp = adminLib.getFirebaseAdmin();
@@ -1143,7 +1161,7 @@ async function handleStripePaymentSucceeded(
       .doc(stripeSubscriptionId)
       .set(doc);
 
-    console.log(`[Integration] pendingPayment written for ${user.firebaseUid}`);
+    console.log(`[Integration] pendingPayment written for ...${user.firebaseUid.slice(-6)}`);
   } catch (err) {
     console.error("[Integration] handleStripePaymentSucceeded error:", err);
   }

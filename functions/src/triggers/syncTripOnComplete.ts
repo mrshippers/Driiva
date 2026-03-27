@@ -11,6 +11,23 @@ import { getPgUserIdByFirebaseUid, insertTripSummary } from '../lib/neon';
 import { EUROPE_LONDON } from '../lib/region';
 import { wrapTrigger } from '../lib/sentry';
 
+/**
+ * Retry a function with exponential backoff.
+ */
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (attempt === maxRetries - 1) throw e;
+      const delayMs = 1000 * Math.pow(2, attempt); // 1s, 2s, 4s
+      functions.logger.warn(`[sync] Retry attempt ${attempt + 1}/${maxRetries} after ${delayMs}ms`, { error: e });
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+  }
+  throw new Error('unreachable');
+}
+
 export const syncTripOnComplete = functions
   .region(EUROPE_LONDON)
   .runWith({ secrets: ['DATABASE_URL'] })
@@ -40,7 +57,7 @@ export const syncTripOnComplete = functions
         sharpTurnCount: 0,
         phonePickupCount: 0,
       };
-      await insertTripSummary({
+      await withRetry(() => insertTripSummary({
         userId: pgUserId,
         firestoreTripId: tripId,
         startedAt,
@@ -55,10 +72,10 @@ export const syncTripOnComplete = functions
         sharpCorners: events.sharpTurnCount,
         startAddress: trip.startLocation?.address ?? null,
         endAddress: trip.endLocation?.address ?? null,
-      });
+      }));
       functions.logger.info('Synced trip to PostgreSQL', { tripId, userId: trip.userId, pgUserId });
     } catch (error) {
-      functions.logger.error('Failed to sync trip to PostgreSQL', { tripId, error });
+      functions.logger.error('Failed to sync trip to PostgreSQL after retries', { tripId, error });
       throw error;
     }
   }));

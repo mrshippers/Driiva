@@ -146,10 +146,15 @@ if (isFirebaseConfigured) {
       }),
     });
 
-    // Analytics: initialize when measurementId is available (throws in some environments)
+    // Analytics: consent-gated — only initialize if user has previously accepted
+    // See CookieConsent component and initAnalyticsWithConsent() below
+    const ANALYTICS_CONSENT_KEY = 'driiva_analytics_consent';
     if (envMeasurementId) {
       try {
-        analytics = getAnalytics(app);
+        const hasConsent = typeof window !== 'undefined' && localStorage.getItem(ANALYTICS_CONSENT_KEY) === 'true';
+        if (hasConsent) {
+          analytics = getAnalytics(app);
+        }
       } catch (analyticsErr) {
         console.warn('Firebase Analytics could not be initialized:', analyticsErr);
       }
@@ -177,6 +182,38 @@ if (isFirebaseConfigured) {
 
 // Google Auth provider — pre-configured, ready for signInWithPopup
 const googleProvider = isFirebaseConfigured ? new GoogleAuthProvider() : null;
+
+// ---------------------------------------------------------------------------
+// 7. Analytics consent helpers (PECR/GDPR compliant)
+// ---------------------------------------------------------------------------
+const ANALYTICS_CONSENT_KEY = 'driiva_analytics_consent';
+
+export function hasAnalyticsConsent(): boolean {
+  try {
+    return localStorage.getItem(ANALYTICS_CONSENT_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function initAnalyticsWithConsent(): typeof analytics {
+  if (analytics) return analytics;
+  if (!app || !envMeasurementId) return null;
+  try {
+    localStorage.setItem(ANALYTICS_CONSENT_KEY, 'true');
+    analytics = getAnalytics(app);
+    return analytics;
+  } catch (err) {
+    console.warn('Firebase Analytics could not be initialized:', err);
+    return null;
+  }
+}
+
+export function rejectAnalyticsConsent(): void {
+  try {
+    localStorage.setItem(ANALYTICS_CONSENT_KEY, 'false');
+  } catch { /* ignore */ }
+}
 
 export { auth, db, googleProvider, analytics, perf };
 export default app;

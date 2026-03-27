@@ -35,6 +35,19 @@ export const webhookLimiter = rateLimit({
   keyGenerator: normalizeIp,
 });
 
+// AI Coach limiter: 10 requests per hour per authenticated user
+export const coachLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10,
+  keyGenerator: (req: express.Request) => {
+    const authReq = req as any;
+    return authReq.auth?.uid || normalizeIp(req);
+  },
+  message: { message: 'Rate limit exceeded. Try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // General API limiter for trip data
 export const tripDataLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes

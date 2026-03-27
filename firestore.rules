@@ -61,13 +61,12 @@ service cloud.firestore {
     // =========================================================================
     // USERNAMES COLLECTION (username → uid lookup for sign-in)
     // =========================================================================
-    // Public read so sign-in page can resolve "johndoe" → uid.
+    // Authenticated-only read so sign-in page can resolve "johndoe" → uid.
+    // Only authenticated users can look up usernames, preventing public enumeration.
     // Only the owning user can create/update their username doc.
-    // NOTE: consider replacing public read with a Cloud Function to prevent
-    // username enumeration attacks.
 
     match /usernames/{username} {
-      allow read: if true;
+      allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
       allow update: if isAuthenticated() && resource.data.uid == request.auth.uid;
       allow delete: if false;
