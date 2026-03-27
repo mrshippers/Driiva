@@ -316,11 +316,11 @@ userId: user?.id ?? 0,  // ← 0 is a valid integer; could cause subtle bugs
 
 ### HIGH
 
-#### H-12 · No Production Deployment Pipeline
+#### H-12 · No Production Deployment Pipeline — FIXED
 **Severity:** HIGH | **Est. fix:** 4 hours
 **Detail:** `.github/workflows/ci.yml` auto-deploys to staging on every push to `main`. There is no production deploy job. Promoting from staging to production requires manual steps (undocumented).
-**File:** `.github/workflows/ci.yml:90-159`
-**Action:** Add a `deploy-production` job gated on a `workflow_dispatch` trigger or a git tag (`v*`). Require a manual approval step (GitHub Environment protection rules) before production deploy runs.
+**File:** `.github/workflows/ci.yml`
+**Status:** ✅ Fixed — `deploy-production` job added. Triggers on `workflow_dispatch` (pick "production") or git tag (`v*`). Gated by GitHub Environment `production` (requires manual approval). Deploys to production Vercel + Firebase.
 
 ---
 
@@ -393,7 +393,7 @@ userId: user?.id ?? 0,  // ← 0 is a valid integer; could cause subtle bugs
 | # | Action | Severity | Est. |
 |---|--------|----------|------|
 | 19 | Phone usage detection (accelerometer pattern recognition) (H-8) | HIGH | 2+ sprints |
-| 20 | Add production deployment pipeline with manual approval gate (H-12) | HIGH | 4 hrs |
+| 20 | ~~Add production deployment pipeline with manual approval gate (H-12)~~ ✅ DONE | HIGH | — |
 | 21 | Service worker / offline PWA support (M-8) | MEDIUM | 4 hrs |
 | 22 | WebAuthn login flow — complete or remove (L-4/L-9) | LOW | 1 sprint |
 | 23 | Migrate score charts to lightweight lib to replace recharts (L-6) | LOW | 2 hrs |
