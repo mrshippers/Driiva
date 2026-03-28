@@ -52,18 +52,28 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const [timedOut, setTimedOut] = React.useState(false);
 
-  // Give Firestore an extra 3s to resolve isAdmin before deciding access is denied.
-  // This prevents a race where loading=false but isAdmin hasn't been fetched yet.
+  // Wait for the admin flag to resolve. With the new fast-path AuthContext,
+  // loading=false happens quickly but isAdmin may arrive via background enrichment.
+  // Give it up to 8 seconds (covers Firestore cold-cache + network latency).
   React.useEffect(() => {
     if (loading || user?.isAdmin) return;
-    const t = setTimeout(() => setTimedOut(true), 3000);
+    const t = setTimeout(() => setTimedOut(true), 8000);
     return () => clearTimeout(t);
   }, [loading, user?.isAdmin]);
 
+  // Reset timeout if user changes (e.g. admin flag arrives from enrichment)
+  React.useEffect(() => {
+    if (user?.isAdmin) {
+      setTimedOut(false);
+    }
+  }, [user?.isAdmin]);
+
+  // Still waiting for auth or admin flag
   if (loading || (!user?.isAdmin && !timedOut)) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3">
         <div className="w-10 h-10 border-3 border-white/20 border-t-white rounded-full animate-spin" />
+        <p className="text-white/40 text-xs">Verifying admin access…</p>
       </div>
     );
   }
@@ -72,7 +82,8 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex items-center justify-center text-center px-6">
         <div>
           <p className="text-white/60 text-lg mb-2">Access denied</p>
-          <p className="text-white/40 text-sm">Your account does not have admin privileges.</p>
+          <p className="text-white/40 text-sm mb-1">Your account does not have admin privileges.</p>
+          <p className="text-white/30 text-xs">Signed in as: {user?.email ?? 'unknown'}</p>
         </div>
       </div>
     );

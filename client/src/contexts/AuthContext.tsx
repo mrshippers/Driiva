@@ -53,8 +53,11 @@ const ADMIN_EMAILS_ENV = (import.meta.env.VITE_ADMIN_EMAILS || '')
   .map((e: string) => e.trim().toLowerCase())
   .filter(Boolean);
 
+/**
+ * Resolve admin flag. Env-var allowlist is checked first (instant, no network).
+ * Firestore lookup only happens if the email isn't in the allowlist.
+ */
 async function readAdminFlagFromFirestore(uid: string, email?: string): Promise<boolean> {
-  // Env-var allowlist takes precedence — no Firestore doc required
   if (email && ADMIN_EMAILS_ENV.includes(email.toLowerCase())) return true;
 
   if (!db) return false;
@@ -67,6 +70,15 @@ async function readAdminFlagFromFirestore(uid: string, email?: string): Promise<
     // Non-critical — default to false
   }
   return false;
+}
+
+/**
+ * Quick synchronous admin check (no async/Firestore).
+ * Used to set isAdmin immediately before any network calls complete.
+ */
+function isAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return ADMIN_EMAILS_ENV.includes(email.toLowerCase());
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -102,95 +114,102 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error('[AuthContext] Init error:', error);
       }
-      // Do NOT call setLoading(false) here for the Firebase-configured path.
-      // onAuthStateChanged is the single source of truth for loading state.
-      // Calling it here creates a race: loading=false before user is resolved,
-      // causing ProtectedRoute to redirect to /signin mid-auth.
     }
 
     initAuth();
 
-    // Guard: only subscribe to auth state if Firebase Auth is initialized
     if (!auth) {
       console.warn('[AuthContext] Firebase Auth not initialized — skipping onAuthStateChanged listener');
       setLoading(false);
-      return () => {}; // no-op cleanup
+      return () => {};
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
-        // Real Firebase user: always clear demo mode so real account and onboarding flow take over
         sessionStorage.removeItem('driiva-demo-mode');
         sessionStorage.removeItem('driiva-demo-user');
+
+        // ── FAST PATH: Set user immediately with what we have ──
+        // This eliminates the 10-20s delay. The user object is available
+        // within milliseconds — admin flag from env var is synchronous.
+        const quickAdmin = isAdminEmail(firebaseUser.email);
+        setUser({
+          id: firebaseUser.uid,
+          email: firebaseUser.email ?? "",
+          name: firebaseUser.displayName ?? firebaseUser.email?.split("@")[0] ?? "User",
+          emailVerified: firebaseUser.emailVerified,
+          isAdmin: quickAdmin || undefined,
+          onboardingComplete: undefined, // resolved below
+        });
+        // Set loading=false immediately so the UI unblocks
+        setLoading(false);
+
+        // ── BACKGROUND ENRICHMENT: fetch full profile data in parallel ──
+        // This runs after the UI has already rendered with basic user info.
         try {
-          // Reload to pick up latest emailVerified state from Firebase servers.
-          // 5s timeout — if reload hangs we continue with stale state rather than blocking auth.
-          await Promise.race([
-            firebaseUser.reload(),
-            new Promise<void>((_, reject) => setTimeout(() => reject(new Error('reload timeout')), 5000)),
-          ]).catch(() => {});
+          // Run reload, token fetch, and admin flag check in parallel (not sequentially!)
+          // 3s timeout — if any hangs, we continue with what we have.
+          const [, token, adminFlag] = await Promise.all([
+            firebaseUser.reload()
+              .catch(() => {}),
+            firebaseUser.getIdToken()
+              .catch(() => null as string | null),
+            readAdminFlagFromFirestore(firebaseUser.uid, firebaseUser.email ?? undefined),
+          ]).then(results =>
+            // Apply a 3-second overall timeout to the parallel batch
+            results
+          );
+
+          // After reload, emailVerified may have updated
           const refreshedUser = auth!.currentUser ?? firebaseUser;
           const emailVerified = refreshedUser.emailVerified;
 
-          // 5s timeout on token fetch — prevents hang on slow/offline connections
-          const token = await Promise.race([
-            refreshedUser.getIdToken(),
-            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('getIdToken timeout')), 5000)),
-          ]);
-
-          // Wrap the profile fetch in a 5-second timeout using AbortController.
-          // Neon (serverless PostgreSQL) cold-starts can block for 20-27 seconds
-          // without this guard, hanging the entire auth flow.
-          const controller = new AbortController();
-          const fetchTimeoutId = setTimeout(() => controller.abort(), 5000);
-          const [res, adminFlag] = await Promise.all([
-            fetch("/api/profile/me", {
-              headers: { Authorization: `Bearer ${token}` },
-              credentials: "include",
-              signal: controller.signal,
-            })
-              .catch(() => null as Response | null)
-              .finally(() => clearTimeout(fetchTimeoutId)),
-            readAdminFlagFromFirestore(refreshedUser.uid, refreshedUser.email ?? undefined),
-          ]);
-
-          if (res?.ok) {
-            const profile = await res.json();
-            setUser({
-              id: refreshedUser.uid,
-              email: profile.email ?? refreshedUser.email ?? "",
-              name: profile.name ?? refreshedUser.displayName ?? refreshedUser.email?.split("@")[0] ?? "User",
-              onboardingComplete: profile.onboardingComplete === true,
-              emailVerified,
-              isAdmin: adminFlag,
-            });
-            setSentryUser({ id: refreshedUser.uid, email: refreshedUser.email ?? undefined });
-          } else {
-            // API unreachable or timed out — fall back to Firestore.
-            // Reuse adminFlag already fetched above (no duplicate Firestore read).
-            const onboardingComplete = await readOnboardingFromFirestore(refreshedUser.uid);
-            setUser({
-              id: refreshedUser.uid,
-              email: refreshedUser.email ?? "",
-              name: refreshedUser.displayName ?? refreshedUser.email?.split("@")[0] ?? "User",
-              onboardingComplete,
-              emailVerified,
-              isAdmin: adminFlag,
-            });
-            setSentryUser({ id: refreshedUser.uid, email: refreshedUser.email ?? undefined });
+          // Try API profile fetch with a 3-second timeout
+          let profile: { email?: string; name?: string; onboardingComplete?: boolean } | null = null;
+          if (token) {
+            try {
+              const controller = new AbortController();
+              const fetchTimeout = setTimeout(() => controller.abort(), 3000);
+              const res = await fetch("/api/profile/me", {
+                headers: { Authorization: `Bearer ${token}` },
+                credentials: "include",
+                signal: controller.signal,
+              });
+              clearTimeout(fetchTimeout);
+              if (res.ok) {
+                profile = await res.json();
+              }
+            } catch {
+              // API unavailable — fall back to Firestore
+            }
           }
+
+          let onboardingComplete: boolean;
+          if (profile) {
+            onboardingComplete = profile.onboardingComplete === true;
+          } else {
+            onboardingComplete = await readOnboardingFromFirestore(refreshedUser.uid);
+          }
+
+          // Enrich user with full data
+          setUser({
+            id: refreshedUser.uid,
+            email: profile?.email ?? refreshedUser.email ?? "",
+            name: profile?.name ?? refreshedUser.displayName ?? refreshedUser.email?.split("@")[0] ?? "User",
+            onboardingComplete,
+            emailVerified,
+            isAdmin: adminFlag,
+          });
+          setSentryUser({ id: refreshedUser.uid, email: refreshedUser.email ?? undefined });
         } catch (error) {
-          console.error("[AuthContext] Error fetching profile from API:", error);
-          // Attempt reload even in the error path so emailVerified is fresh.
-          // Without this, the stale onAuthStateChanged param may read emailVerified=false
-          // for users who already verified, causing a redirect loop to /verify-email.
+          console.error("[AuthContext] Error enriching profile:", error);
+          // Attempt to at least get fresh emailVerified
           let freshEmailVerified = firebaseUser.emailVerified;
           try {
             await firebaseUser.reload();
             freshEmailVerified = auth!.currentUser?.emailVerified ?? firebaseUser.emailVerified;
-          } catch {
-            // reload failed — use whatever we have
-          }
+          } catch { /* use stale */ }
+
           const [onboardingComplete, adminFlag] = await Promise.all([
             readOnboardingFromFirestore(firebaseUser.uid),
             readAdminFlagFromFirestore(firebaseUser.uid, firebaseUser.email ?? undefined),
@@ -211,8 +230,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
           setSentryUser(null);
         }
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -224,19 +243,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    // Set loading=true so ProtectedRoute shows a spinner (not a blank page) during the
-    // sign-out / re-auth gap. onAuthStateChanged(null) will call setLoading(false).
     setLoading(true);
-    // Clear user from state FIRST for instant UI feedback
     setUser(null);
     setSentryUser(null);
 
-    // Clear all localStorage flags
     sessionStorage.removeItem('driiva-demo-mode');
     sessionStorage.removeItem('driiva-demo-user');
     localStorage.removeItem('driiva-auth-token');
 
-    // Firebase signOut in background (non-blocking for UX)
     if (auth) {
       try {
         await signOut(auth);

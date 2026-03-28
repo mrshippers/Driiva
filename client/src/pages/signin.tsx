@@ -10,7 +10,7 @@ import { useParallax } from "@/hooks/useParallax";
 import { useAuth } from "../contexts/AuthContext";
 import { auth, db, isFirebaseConfigured, googleProvider } from "@/lib/firebase";
 import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import WelcomeBackOverlay from "@/components/WelcomeBackOverlay";
 import BiometricAuth from "@/components/BiometricAuth";
 
@@ -131,66 +131,45 @@ export default function SignIn() {
     }
 
     try {
-      const userCredential = await Promise.race([
-        signInWithEmailAndPassword(auth, email, password),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Sign-in timed out. Please check your connection and try again.')), 10000)
-        ),
-      ]);
+      // Firebase auth only — AuthContext's onAuthStateChanged handles the rest.
+      // No redundant Firestore reads here. This eliminates 5-10s of post-auth delay.
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
-      let onboardingComplete = false;
-      let score: number | undefined;
-      let lastTripLabel: string | undefined;
-
-      try {
-        if (!db) throw new Error('Firestore not initialized');
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        if (userDoc.exists()) {
-          const d = userDoc.data();
-          onboardingComplete = d?.onboardingComplete === true;
-          score = d?.drivingProfile?.score ?? d?.drivingScore;
-          const recent = d?.recentTrips;
-          if (Array.isArray(recent) && recent.length > 0) {
-            const last = recent[0];
-            lastTripLabel = last.from && last.to ? `${last.from} → ${last.to}` : last.date;
-          }
-        } else {
-          await setDoc(userDocRef, {
-            uid: user.uid,
-            email: user.email || email,
-            fullName: user.displayName || user.email?.split('@')[0] || 'User',
-            onboardingComplete: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          });
-        }
-      } catch {
-        // Non-critical — auth succeeded, profile will be created by Cloud Function
-      }
-
       const displayName = user.displayName || user.email?.split('@')[0] || 'User';
 
-      setUser({
-        id: user.uid,
-        email: user.email || email,
-        name: displayName,
-        onboardingComplete,
-        emailVerified: user.emailVerified,
-      });
+      // Quick non-blocking Firestore read for welcome overlay data only.
+      // This does NOT block navigation — AuthContext resolves user state independently.
+      let score: number | undefined;
+      let lastTripLabel: string | undefined;
+      let onboardingComplete = false;
+      try {
+        if (db) {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const d = userDoc.data();
+            onboardingComplete = d?.onboardingComplete === true;
+            score = d?.drivingProfile?.score ?? d?.drivingScore;
+            const recent = d?.recentTrips;
+            if (Array.isArray(recent) && recent.length > 0) {
+              const last = recent[0];
+              lastTripLabel = last.from && last.to ? `${last.from} → ${last.to}` : last.date;
+            }
+          }
+        }
+      } catch {
+        // Non-critical — welcome overlay just won't show score/trip
+      }
 
       saveLastUser({ name: displayName, email: user.email || email, score, lastTrip: lastTripLabel });
 
-      const destination = onboardingComplete ? "/dashboard" : "/quick-onboarding";
-
       if (onboardingComplete) {
-        pendingDestination.current = destination;
+        pendingDestination.current = "/dashboard";
         setWelcomeData({ name: displayName, score, lastTrip: lastTripLabel });
         setShowWelcomeOverlay(true);
       } else {
-        setLocation(destination);
+        // AuthContext's onAuthStateChanged will set user + onboardingComplete.
+        // ProtectedRoute will redirect to /quick-onboarding if needed.
+        setLocation("/dashboard");
       }
 
     } catch (error: unknown) {
@@ -233,63 +212,17 @@ export default function SignIn() {
     setLoginError(null);
 
     try {
+      // Firebase auth only — AuthContext handles the rest via onAuthStateChanged.
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
-
-      let onboardingComplete = false;
-      let gScore: number | undefined;
-      let gLastTrip: string | undefined;
-
-      try {
-        if (!db) throw new Error('Firestore not initialized');
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        if (userDoc.exists()) {
-          const d = userDoc.data();
-          onboardingComplete = d?.onboardingComplete === true;
-          gScore = d?.drivingProfile?.score ?? d?.drivingScore;
-          const recent = d?.recentTrips;
-          if (Array.isArray(recent) && recent.length > 0) {
-            const last = recent[0];
-            gLastTrip = last.from && last.to ? `${last.from} → ${last.to}` : last.date;
-          }
-        } else {
-          await setDoc(userDocRef, {
-            uid: user.uid,
-            email: user.email || '',
-            fullName: user.displayName || user.email?.split('@')[0] || 'User',
-            onboardingComplete: false,
-            onboardingCompleted: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          });
-        }
-      } catch {
-        // Non-critical — auth succeeded, profile will be created by Cloud Function
-      }
-
       const gDisplayName = user.displayName || user.email?.split('@')[0] || 'User';
 
-      setUser({
-        id: user.uid,
-        email: user.email || '',
-        name: gDisplayName,
-        onboardingComplete,
-        emailVerified: user.emailVerified,
-      });
+      saveLastUser({ name: gDisplayName, email: user.email || '' });
 
-      saveLastUser({ name: gDisplayName, email: user.email || '', score: gScore, lastTrip: gLastTrip });
-
-      const gDest = onboardingComplete ? "/dashboard" : "/quick-onboarding";
-
-      if (onboardingComplete) {
-        pendingDestination.current = gDest;
-        setWelcomeData({ name: gDisplayName, score: gScore, lastTrip: gLastTrip });
-        setShowWelcomeOverlay(true);
-      } else {
-        setLocation(gDest);
-      }
+      // Navigate to dashboard — ProtectedRoute + AuthContext handle onboarding/verify redirects.
+      pendingDestination.current = "/dashboard";
+      setWelcomeData({ name: gDisplayName });
+      setShowWelcomeOverlay(true);
 
     } catch (error: any) {
       console.error('[SignIn] Google sign-in failed:', error);
