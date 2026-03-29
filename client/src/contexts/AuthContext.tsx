@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { auth, db, isFirebaseConfigured } from "../lib/firebase";
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User as FirebaseUser } from "firebase/auth";
 import { doc } from "firebase/firestore";
@@ -27,11 +27,42 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/**
- * Firestore fallback: read onboardingComplete directly from Firestore.
- * Used when the Express API is unavailable (e.g. no service account key configured).
- * Returns false safely on any error.
- */
+// ─── LocalStorage auth cache ────────────────────────────────────────────────
+// Lets us render immediately on return visits without waiting for Firebase SDK.
+const AUTH_CACHE_KEY = 'driiva-auth-cache';
+
+function getCachedUser(): User | null {
+  try {
+    const raw = localStorage.getItem(AUTH_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Basic sanity check
+    if (parsed && parsed.id && parsed.email) return parsed as User;
+  } catch { /* corrupt cache */ }
+  return null;
+}
+
+function setCachedUser(user: User | null) {
+  try {
+    if (user) {
+      localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(AUTH_CACHE_KEY);
+    }
+  } catch { /* quota / private browsing */ }
+}
+
+// ─── Admin helpers ──────────────────────────────────────────────────────────
+const ADMIN_EMAILS_ENV = (import.meta.env.VITE_ADMIN_EMAILS || '')
+  .split(',')
+  .map((e: string) => e.trim().toLowerCase())
+  .filter(Boolean);
+
+function isAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return ADMIN_EMAILS_ENV.includes(email.toLowerCase());
+}
+
 async function readOnboardingFromFirestore(uid: string): Promise<boolean> {
   if (!db) return false;
   try {
@@ -45,131 +76,122 @@ async function readOnboardingFromFirestore(uid: string): Promise<boolean> {
   return false;
 }
 
-// Emails listed here are granted admin access without needing a Firestore document.
-// Set VITE_ADMIN_EMAILS in Vercel → Settings → Environment Variables.
-// e.g. j.o.adu@hotmail.co.uk,jamal@driiva.co.uk
-const ADMIN_EMAILS_ENV = (import.meta.env.VITE_ADMIN_EMAILS || '')
-  .split(',')
-  .map((e: string) => e.trim().toLowerCase())
-  .filter(Boolean);
-
-/**
- * Resolve admin flag. Env-var allowlist is checked first (instant, no network).
- * Firestore lookup only happens if the email isn't in the allowlist.
- */
 async function readAdminFlagFromFirestore(uid: string, email?: string): Promise<boolean> {
   if (email && ADMIN_EMAILS_ENV.includes(email.toLowerCase())) return true;
-
   if (!db) return false;
   try {
     const userSnap = await getDocWithRetry(doc(db, 'users', uid));
     if (userSnap.exists()) {
       return userSnap.data()?.isAdmin === true;
     }
-  } catch {
-    // Non-critical — default to false
-  }
+  } catch { /* Non-critical */ }
   return false;
 }
 
-/**
- * Quick synchronous admin check (no async/Firestore).
- * Used to set isAdmin immediately before any network calls complete.
- */
-function isAdminEmail(email: string | null | undefined): boolean {
-  if (!email) return false;
-  return ADMIN_EMAILS_ENV.includes(email.toLowerCase());
-}
+// ─── Maximum time (ms) loading can stay true ────────────────────────────────
+const LOADING_HARD_TIMEOUT_MS = 3000;
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Hydrate from cache immediately — no waiting for Firebase SDK
+  const cachedUser = useRef(getCachedUser());
+  const [user, setUserState] = useState<User | null>(cachedUser.current);
+  // If we have a cached user, we don't need to block rendering
+  const [loading, setLoading] = useState(!cachedUser.current);
+
+  // Wrapper that also updates the cache
+  const setUser = (u: User | null) => {
+    setUserState(u);
+    setCachedUser(u);
+  };
 
   useEffect(() => {
-    async function initAuth() {
-      try {
-        const demoModeActive = sessionStorage.getItem('driiva-demo-mode') === 'true';
-        if (demoModeActive) {
-          const demoUserData = sessionStorage.getItem('driiva-demo-user');
-          if (demoUserData) {
-            try {
-              const parsedUser = JSON.parse(demoUserData);
-              setUser({
-                id: parsedUser.id,
-                email: parsedUser.email,
-                name: parsedUser.name || parsedUser.first_name || 'Demo User',
-                onboardingComplete: true,
-              });
-            } catch (e) {
-              console.error('[AuthContext] Failed to parse demo user:', e);
-            }
-          }
-        }
-
-        if (!isFirebaseConfigured) {
-          console.log('[AuthContext] Firebase not configured, skipping session check');
-          setLoading(false);
-          return;
-        }
-      } catch (error) {
-        console.error('[AuthContext] Init error:', error);
-      }
+    // ── Hard timeout: never block the UI for more than 3s ──
+    let hardTimeout: ReturnType<typeof setTimeout> | undefined;
+    if (loading) {
+      hardTimeout = setTimeout(() => {
+        setLoading(false);
+      }, LOADING_HARD_TIMEOUT_MS);
     }
 
-    initAuth();
+    // ── Demo mode ──
+    try {
+      const demoModeActive = sessionStorage.getItem('driiva-demo-mode') === 'true';
+      if (demoModeActive) {
+        const demoUserData = sessionStorage.getItem('driiva-demo-user');
+        if (demoUserData) {
+          try {
+            const parsedUser = JSON.parse(demoUserData);
+            setUser({
+              id: parsedUser.id,
+              email: parsedUser.email,
+              name: parsedUser.name || parsedUser.first_name || 'Demo User',
+              onboardingComplete: true,
+            });
+          } catch (e) {
+            console.error('[AuthContext] Failed to parse demo user:', e);
+          }
+        }
+      }
+    } catch { /* sessionStorage unavailable */ }
+
+    if (!isFirebaseConfigured) {
+      setLoading(false);
+      return () => { if (hardTimeout) clearTimeout(hardTimeout); };
+    }
 
     if (!auth) {
-      console.warn('[AuthContext] Firebase Auth not initialized — skipping onAuthStateChanged listener');
       setLoading(false);
-      return () => {};
+      return () => { if (hardTimeout) clearTimeout(hardTimeout); };
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      // Clear hard timeout — we got a real response
+      if (hardTimeout) { clearTimeout(hardTimeout); hardTimeout = undefined; }
+
       if (firebaseUser) {
         sessionStorage.removeItem('driiva-demo-mode');
         sessionStorage.removeItem('driiva-demo-user');
 
-        // ── FAST PATH: Set user immediately with what we have ──
-        // This eliminates the 10-20s delay. The user object is available
-        // within milliseconds — admin flag from env var is synchronous.
+        // ── FAST PATH: render immediately with what we have ──
         const quickAdmin = isAdminEmail(firebaseUser.email);
-        setUser({
+        const fastUser: User = {
           id: firebaseUser.uid,
           email: firebaseUser.email ?? "",
           name: firebaseUser.displayName ?? firebaseUser.email?.split("@")[0] ?? "User",
           emailVerified: firebaseUser.emailVerified,
           isAdmin: quickAdmin || undefined,
-          onboardingComplete: undefined, // resolved below
-        });
-        // Set loading=false immediately so the UI unblocks
+          // Use cached onboardingComplete if available, otherwise undefined
+          onboardingComplete: cachedUser.current?.id === firebaseUser.uid
+            ? cachedUser.current.onboardingComplete
+            : undefined,
+        };
+        setUser(fastUser);
         setLoading(false);
 
-        // ── BACKGROUND ENRICHMENT: fetch full profile data in parallel ──
-        // This runs after the UI has already rendered with basic user info.
+        // ── BACKGROUND ENRICHMENT ──
+        // Everything below runs after the UI is already interactive.
         try {
-          // Run reload, token fetch, and admin flag check in parallel (not sequentially!)
-          // 3s timeout — if any hangs, we continue with what we have.
-          const [, token, adminFlag] = await Promise.all([
-            firebaseUser.reload()
-              .catch(() => {}),
-            firebaseUser.getIdToken()
-              .catch(() => null as string | null),
+          // Parallelize: token fetch + admin flag + onboarding status
+          // Skip firebaseUser.reload() — it's slow and only needed for emailVerified refresh
+          const enrichPromise = Promise.all([
+            firebaseUser.getIdToken().catch(() => null as string | null),
             readAdminFlagFromFirestore(firebaseUser.uid, firebaseUser.email ?? undefined),
-          ]).then(results =>
-            // Apply a 3-second overall timeout to the parallel batch
-            results
+            readOnboardingFromFirestore(firebaseUser.uid),
+          ]);
+
+          // 4s hard timeout on enrichment — if it doesn't complete, use what we have
+          const enrichTimeout = new Promise<[string | null, boolean, boolean]>((resolve) =>
+            setTimeout(() => resolve([null, quickAdmin, fastUser.onboardingComplete ?? false]), 4000)
           );
 
-          // After reload, emailVerified may have updated
-          const refreshedUser = auth!.currentUser ?? firebaseUser;
-          const emailVerified = refreshedUser.emailVerified;
+          const [token, adminFlag, onboardingDirect] = await Promise.race([enrichPromise, enrichTimeout]);
 
-          // Try API profile fetch with a 3-second timeout
-          let profile: { email?: string; name?: string; onboardingComplete?: boolean } | null = null;
+          // Try API profile (1.5s timeout — it's optional, Firestore is the source of truth)
+          let profileOnboarding: boolean | null = null;
           if (token) {
             try {
               const controller = new AbortController();
-              const fetchTimeout = setTimeout(() => controller.abort(), 3000);
+              const fetchTimeout = setTimeout(() => controller.abort(), 1500);
               const res = await fetch("/api/profile/me", {
                 headers: { Authorization: `Bearer ${token}` },
                 credentials: "include",
@@ -177,54 +199,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               });
               clearTimeout(fetchTimeout);
               if (res.ok) {
-                profile = await res.json();
+                const profile = await res.json();
+                profileOnboarding = profile.onboardingComplete === true;
               }
-            } catch {
-              // API unavailable — fall back to Firestore
-            }
+            } catch { /* API unavailable — use Firestore result */ }
           }
 
-          let onboardingComplete: boolean;
-          if (profile) {
-            onboardingComplete = profile.onboardingComplete === true;
-          } else {
-            onboardingComplete = await readOnboardingFromFirestore(refreshedUser.uid);
-          }
+          const onboardingComplete = profileOnboarding ?? onboardingDirect;
 
-          // Enrich user with full data
-          setUser({
-            id: refreshedUser.uid,
-            email: profile?.email ?? refreshedUser.email ?? "",
-            name: profile?.name ?? refreshedUser.displayName ?? refreshedUser.email?.split("@")[0] ?? "User",
+          // Refresh emailVerified from currentUser (may have updated via getIdToken)
+          const currentUser = auth!.currentUser ?? firebaseUser;
+
+          const enrichedUser: User = {
+            id: currentUser.uid,
+            email: currentUser.email ?? "",
+            name: currentUser.displayName ?? currentUser.email?.split("@")[0] ?? "User",
             onboardingComplete,
-            emailVerified,
+            emailVerified: currentUser.emailVerified,
             isAdmin: adminFlag,
-          });
-          setSentryUser({ id: refreshedUser.uid, email: refreshedUser.email ?? undefined });
+          };
+          setUser(enrichedUser);
+          setSentryUser({ id: currentUser.uid, email: currentUser.email ?? undefined });
         } catch (error) {
-          console.error("[AuthContext] Error enriching profile:", error);
-          // Attempt to at least get fresh emailVerified
-          let freshEmailVerified = firebaseUser.emailVerified;
+          console.error("[AuthContext] Enrichment error:", error);
+          // Fallback: try Firestore directly
           try {
-            await firebaseUser.reload();
-            freshEmailVerified = auth!.currentUser?.emailVerified ?? firebaseUser.emailVerified;
-          } catch { /* use stale */ }
-
-          const [onboardingComplete, adminFlag] = await Promise.all([
-            readOnboardingFromFirestore(firebaseUser.uid),
-            readAdminFlagFromFirestore(firebaseUser.uid, firebaseUser.email ?? undefined),
-          ]);
-          setUser({
-            id: firebaseUser.uid,
-            email: firebaseUser.email ?? "",
-            name: firebaseUser.displayName ?? firebaseUser.email?.split("@")[0] ?? "User",
-            onboardingComplete,
-            emailVerified: freshEmailVerified,
-            isAdmin: adminFlag,
-          });
-          setSentryUser({ id: firebaseUser.uid, email: firebaseUser.email ?? undefined });
+            const [onboardingComplete, adminFlag] = await Promise.all([
+              readOnboardingFromFirestore(firebaseUser.uid),
+              readAdminFlagFromFirestore(firebaseUser.uid, firebaseUser.email ?? undefined),
+            ]);
+            setUser({
+              id: firebaseUser.uid,
+              email: firebaseUser.email ?? "",
+              name: firebaseUser.displayName ?? firebaseUser.email?.split("@")[0] ?? "User",
+              onboardingComplete,
+              emailVerified: firebaseUser.emailVerified,
+              isAdmin: adminFlag,
+            });
+            setSentryUser({ id: firebaseUser.uid, email: firebaseUser.email ?? undefined });
+          } catch { /* Give up enrichment — fast path user is already set */ }
         }
       } else {
+        // No user — clear cache and state
         const demoModeActive = sessionStorage.getItem("driiva-demo-mode") === "true";
         if (!demoModeActive) {
           setUser(null);
@@ -234,7 +250,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (hardTimeout) clearTimeout(hardTimeout);
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -261,7 +280,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const markEmailVerified = () => {
-    setUser(u => u ? { ...u, emailVerified: true } : null);
+    setUserState(u => {
+      const updated = u ? { ...u, emailVerified: true } : null;
+      setCachedUser(updated);
+      return updated;
+    });
   };
 
   const checkOnboardingStatus = async (): Promise<boolean> => {
