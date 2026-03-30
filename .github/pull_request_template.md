@@ -23,11 +23,12 @@
 - [ ] Async/await correct — no unhandled rejections
 - [ ] TypeScript types accurate — no `any` or unsafe casts
 - [ ] Bug fixes include a test that catches the original bug
-### Next.js
-- [ ] Server vs Client Components split correctly (`"use client"` only where needed)
+### Vite / React
+- [ ] No server-only code imported in client bundles
 - [ ] No waterfall data fetches that could be parallel
-- [ ] API routes validate method, body, and query params
-- [ ] `NEXT_PUBLIC_` prefix only on browser-safe values
+- [ ] Express API routes validate method, body, and query params
+- [ ] `VITE_` prefix only on browser-safe env values
+- [ ] React hooks follow rules-of-hooks (no conditional hooks)
 
 ### Firebase
 - [ ] Correct Firestore collection paths and document refs
@@ -53,8 +54,8 @@
 - [ ] No unbounded Firestore queries — `limit()` or pagination used
 - [ ] No N+1 patterns — batch reads, not loops
 - [ ] Firestore writes batched where possible
-- [ ] Pages that can be static are statically generated
-- [ ] Images use `next/image` with appropriate sizing
+- [ ] Static assets served from `public/` with appropriate caching
+- [ ] Images optimised (appropriate format and sizing)
 - [ ] `useEffect` dependencies correct — no infinite re-renders
 - [ ] Bundle size impact considered for new dependencies
 

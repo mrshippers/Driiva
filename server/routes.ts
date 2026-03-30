@@ -32,6 +32,27 @@ import {
 } from "./middleware/auth";
 import { getStripe, getStripeWebhookSecret, stripeIdempotencyKey } from "./lib/stripe";
 
+// In-memory TTL cache for leaderboard (public, read-heavy, rarely changes)
+const leaderboardCache = new Map<string, { data: unknown; expiresAt: number }>();
+const LEADERBOARD_CACHE_TTL_MS = 60_000; // 60 seconds
+
+function getCachedLeaderboard(key: string): unknown | null {
+  const entry = leaderboardCache.get(key);
+  if (!entry || Date.now() > entry.expiresAt) {
+    leaderboardCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCachedLeaderboard(key: string, data: unknown): void {
+  leaderboardCache.set(key, { data, expiresAt: Date.now() + LEADERBOARD_CACHE_TTL_MS });
+}
+
+function invalidateLeaderboardCache(): void {
+  leaderboardCache.clear();
+}
+
 export async function registerRoutes(app: Express): Promise<void> {
   // Verify Firebase JWT on all requests; sets req.auth { uid, email, userId } from token only (never from headers)
   app.use(verifyFirebaseAuth);
@@ -142,11 +163,19 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
 
-  // Firebase Authentication with rate limiting (placeholder for future implementation)
+  // Firebase Authentication — verify ID token from client-side Firebase sign-in
   app.post("/api/auth/firebase", authLimiter, async (req, res) => {
     try {
-      // TODO: Implement Firebase authentication when needed
-      res.status(501).json({ message: "Firebase authentication not implemented yet" });
+      const { token } = req.body;
+      if (!token || typeof token !== "string") {
+        return res.status(400).json({ message: "Token required" });
+      }
+      const { verifyFirebaseToken } = await import("./lib/firebase-admin");
+      const decoded = await verifyFirebaseToken(token);
+      if (!decoded) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+      res.json({ authenticated: true, user: { uid: decoded.uid, email: decoded.email } });
     } catch (error) {
       console.error("Firebase auth error:", error);
       res.status(401).json({ message: "Invalid token" });
@@ -279,7 +308,12 @@ export async function registerRoutes(app: Express): Promise<void> {
       const recentTrips = await storage.getUserTrips(userId, 5);
       const pool = await storage.getCommunityPool();
       const achievements = await storage.getUserAchievements(userId);
-      const leaderboard = await storage.getLeaderboard('weekly', 10);
+      const lbCacheKey = 'weekly:10';
+      const leaderboard = getCachedLeaderboard(lbCacheKey) ?? await (async () => {
+        const lb = await storage.getLeaderboard('weekly', 10);
+        setCachedLeaderboard(lbCacheKey, lb);
+        return lb;
+      })();
 
       if (!user || !profile) {
         return res.status(404).json({ message: "User not found" });
@@ -391,8 +425,9 @@ export async function registerRoutes(app: Express): Promise<void> {
           totalMiles: (Number(profile.totalMiles) + metrics.distanceKm).toString() // Add km
         });
 
-        // Update leaderboard
+        // Update leaderboard and bust cache
         await storage.updateLeaderboard(tripData.userId, newCurrentScore);
+        invalidateLeaderboardCache();
       }
 
       res.json({
@@ -549,12 +584,20 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Get leaderboard
+  // Get leaderboard (cached — 60s TTL)
   app.get("/api/leaderboard", async (req, res) => {
     try {
       const period = req.query.period as string || 'weekly';
       const limit = parseInt(req.query.limit as string) || 50;
+      const cacheKey = `${period}:${limit}`;
+
+      const cached = getCachedLeaderboard(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
+
       const leaderboard = await storage.getLeaderboard(period, limit);
+      setCachedLeaderboard(cacheKey, leaderboard);
       res.json(leaderboard);
     } catch (error: any) {
       res.status(500).json({ message: "Error fetching leaderboard: " + error.message });
