@@ -1,6 +1,6 @@
 # Driiva — Current sprint (tickets)
 
-**Last updated:** 13 March 2025  
+**Last updated:** 31 March 2026
 **Product Lead:** Keith Cheng  
 **External memory for AI sessions:** Work on the next unchecked ticket only; update this list when done.
 
@@ -81,6 +81,23 @@ These are known gaps that don't have tickets yet:
 - [x] **Achievements backend** — 8 definitions, unlock logic in Cloud Functions, frontend wired to real Firestore data.
 - [ ] **WebAuthn/Passkey login** — `server/webauthn.ts` is scaffolded but not exposed as a real login flow in the frontend.
 - [ ] **Staging environment** — `driiva-staging` project provisioned; manual steps remain (Blaze plan, deploy functions, Vercel staging). Recommended before any production payments go live.
+
+## Sprint: "Code Quality & UX Fixes" (Week 9–10)
+
+- [x] Split quick-onboarding.tsx into 12 step components — *done: 1261 → 390 lines; 12 components in `client/src/pages/onboarding/steps/`*
+- [x] Add leaderboard in-memory cache (60s TTL) — *done: deduplicates Neon reads; auto-invalidates on score update*
+- [x] Implement `/api/auth/firebase` endpoint — *done: was returning 501; now verifies Firebase ID tokens*
+- [x] Fix PR template (Next.js → Vite/React) — *done: corrected checklist, env prefix, image optimisation references*
+- [x] Add coverage thresholds to vitest — *done: baseline 4/2/7/4%; CI will catch regressions*
+- [x] Sign-in integration tests (15 tests) — *done: form validation, auth flows, username resolution, error handling*
+- [x] Trip-recording integration tests (37 tests) — *done: full lifecycle, demo mode, error states*
+- [x] Fix notification bell button on dashboard — *done: was dead button; now opens dropdown with mutual exclusion*
+- [x] Premium mobile UX polish — *done: haptics, pull-to-refresh, shimmer skeletons, swipe cards, animated numbers*
+- [x] Fix auth performance (10-20s delay) — *done: localStorage cache, hard timeout, splash screen*
+- [ ] Split `server/routes.ts` into domain-specific route modules
+- [ ] Add OpenAPI documentation for Express API
+- [ ] Set up structured logging with Sentry breadcrumbs
+- [ ] Add pre-commit hooks (lint + type-check)
 
 ## Sprint: "Observation Mode" (Live Monitoring)
 

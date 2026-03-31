@@ -5,6 +5,113 @@
 
 ## Entries
 
+### 2026-03-31 – Notification Bell Fix + Post-Merge Test Alignment
+
+- Fixed dashboard notification bell button (had no onClick handler — was a dead button)
+- Added notification dropdown panel with mutual exclusion against profile dropdown
+- Updated sign-in integration tests to match refactored auth flow (welcome overlay for onboarded users, ProtectedRoute-based redirect for non-onboarded)
+- Fixed TypeScript type widening in trip-recording test mocks
+
+**Tests:** 299 passing, 0 regressions.
+
+---
+
+### 2026-03-31 – Integration Tests for Sign-In + Trip Recording
+
+- Created `signin-flow.test.tsx`: 15 tests covering form rendering, validation, email/password auth, username resolution, error handling (invalid creds, rate limit, timeout), Firebase-not-configured state
+- Created `trip-recording-flow.test.tsx`: 37 tests + 2 todos covering idle/starting/recording/paused/stopping states, pause/resume lifecycle, trip end with score + redirect, cancel flow, demo mode (local-only), error states (permission denied, timeout)
+
+**Tests:** 299 passing (up from 247), 2 todos for timer simulation.
+
+---
+
+### 2026-03-30 – Refactor, Cache, Auth Fix, PR Template
+
+**Onboarding refactor**
+- Split `quick-onboarding.tsx` (1261 lines, 12 inline steps) into 12 individual step components under `client/src/pages/onboarding/steps/`
+- Parent component reduced to 390 lines; all state management stays in parent
+- Created shared `OnboardingStepProps` interface in `onboarding/types.ts`
+
+**Leaderboard cache**
+- Added 60-second in-memory TTL cache for `/api/leaderboard` and dashboard leaderboard queries
+- Cache invalidated automatically when scores update after trip processing
+- Deduplicates Neon Postgres reads on a public, read-heavy endpoint
+
+**Auth endpoint fix**
+- Implemented `/api/auth/firebase` endpoint (was returning 501 TODO placeholder)
+- Now verifies Firebase ID tokens via `verifyFirebaseToken()` and returns user info
+- `FirebaseSignIn.tsx` component was already calling this endpoint
+
+**PR template fix**
+- Replaced Next.js checklist with Vite/React-appropriate checks (hooks rules, `VITE_` prefix, no `next/image`)
+- Added coverage thresholds to `vitest.config.ts` (baseline: 4%/2%/7%/4%)
+
+**Tests:** 247 passing, 0 regressions.
+
+---
+
+### 2026-03-28 – Premium Mobile UX Polish
+
+- Added haptic feedback (vibration API) on button taps and score changes
+- Implemented pull-to-refresh on dashboard with spring animation
+- Added shimmer loading skeletons across all data cards
+- Created swipeable trip cards with dismiss gesture
+- Added animated number counters for score/miles/refund values
+- Implemented scroll-aware header that collapses on scroll
+- Added smooth tab transitions on trips page
+
+---
+
+### 2026-03-27 – Auth Performance + Splash Screen
+
+- Eliminated 10-20s login delay by caching auth state in localStorage
+- Added hard timeout on auth resolution (no more infinite spinners)
+- Created premium first-launch splash screen with Driiva branding
+- Fixed email verification redirect loop for admin users
+- Admin console now bypasses onboarding/email checks
+
+---
+
+### 2026-03-25 – Auth Timeouts, Settings Nav, Dedup Reads
+
+- Added 10s timeout on Firebase sign-in with user-facing timeout message
+- Fixed settings page navigation (was not routing correctly)
+- Deduplicated redundant Firestore reads in auth flow
+- Removed debug console.log statements from production code
+
+---
+
+### 2026-03-20 – Observation Mode Monitoring Sprint
+
+- Wired Sentry `wrapFunction`/`wrapTrigger` on all Cloud Functions
+- Added Firebase Performance Monitoring with custom trace utility
+- Added structured metrics logging with `[metric]` tags for Cloud Monitoring
+- Integrated Vercel Analytics + Speed Insights (Web Vitals, page latency)
+- Built `monitorTripHealth` watchdog function for failed/stuck trips
+- Enhanced health endpoint with version info and dependency checks
+
+---
+
+### 2026-03-15 – Security Audit + CI Pipeline
+
+- Resolved all critical and high npm vulnerabilities
+- Added production deployment pipeline with manual approval gate
+- Full system audit: 12 issues found and fixed across Firestore rules, PostgreSQL, Cloud Functions, API routes
+- Added Claude Code automated PR review workflow
+- Resolved all CI failures (type errors, missing deps, coverage step)
+
+---
+
+### 2026-03-08 – Dynamic Pricing + WebAuthn + NCB Onboarding
+
+- Dynamic pricing engine scaffolded (premium calculation based on risk profile)
+- Stripe payment toggle wired (not yet end-to-end)
+- WebAuthn UI for passkey management added to settings
+- No-Claims Bonus step added to onboarding flow (step 7)
+- Phone usage detection via Page Visibility API (counts app switches as phone pickups)
+
+---
+
 ### 2026-03-02 – Damoov Telematics + Feedback + Compliance
 
 **Phase 1 — Damoov Integration (server-side)**
