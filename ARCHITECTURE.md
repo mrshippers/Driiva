@@ -1,5 +1,7 @@
 # Driiva Architecture
 
+**Last updated:** 13 March 2025
+
 This document provides a technical specification of the Driiva platform. It serves as the primary technical reference for developers and auditors.
 
 ---

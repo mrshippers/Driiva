@@ -177,7 +177,9 @@ export default function SignIn() {
       console.error('[SignIn] Authentication failed:', err);
       let errorMessage = "Invalid email or password. Try demo mode if you don't have an account yet.";
 
-      if (err.code === 'auth/api-key-not-valid.-please-pass-a-valid-api-key' ||
+      if (err.message?.includes('Sign-in timed out')) {
+        errorMessage = "Sign-in timed out. Please check your connection and try again.";
+      } else if (err.code === 'auth/api-key-not-valid.-please-pass-a-valid-api-key' ||
         err.code === 'auth/api-key-not-valid-please-pass-a-valid-api-key' ||
         err.message?.includes('api-key-not-valid')) {
         errorMessage = "Service configuration error. The Firebase API key is invalid or restricted.";
