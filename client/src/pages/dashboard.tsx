@@ -201,6 +201,7 @@ export default function Dashboard() {
 
   // UI state
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [mapExpanded, setMapExpanded] = useState(false);
   const [showDeepInsight, setShowDeepInsight] = useState(false);
   const [currentInsightIndex] = useState(() => Math.floor(Math.random() * 7));
@@ -434,12 +435,15 @@ export default function Dashboard() {
                 <RefreshCw className={`w-4 h-4 text-white/60 ${dataLoading ? 'animate-spin' : ''}`} />
               </button>
             )}
-            <button className="p-2 rounded-full hover:bg-white/5 transition-colors">
+            <button
+              onClick={() => { setShowNotifications(!showNotifications); setShowDropdown(false); }}
+              className="p-2 rounded-full hover:bg-white/5 transition-colors"
+            >
               <Bell className="w-5 h-5 text-white/60" />
             </button>
             
             <button 
-              onClick={() => setShowDropdown(!showDropdown)}
+              onClick={() => { setShowDropdown(!showDropdown); setShowNotifications(false); }}
               className="flex items-center gap-1"
             >
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center">
@@ -449,6 +453,41 @@ export default function Dashboard() {
               </div>
               <ChevronDown className={`w-4 h-4 text-white/50 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
             </button>
+
+            {/* Notifications Dropdown */}
+            <AnimatePresence>
+              {showNotifications && (
+                <>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setShowNotifications(false)}
+                    className="fixed inset-0 z-40"
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-12 right-0 w-[280px] z-50 backdrop-blur-2xl bg-[#1a1a2e]/95 border border-white/10 rounded-xl shadow-2xl overflow-hidden"
+                  >
+                    <div className="p-4 border-b border-white/10">
+                      <h3 className="text-sm font-semibold text-white">Notifications</h3>
+                    </div>
+                    <div className="p-4">
+                      <div className="flex flex-col items-center justify-center py-6 text-center">
+                        <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-3">
+                          <Bell className="w-5 h-5 text-white/40" />
+                        </div>
+                        <p className="text-sm text-white/70 mb-1">No new notifications</p>
+                        <p className="text-xs text-white/40">We'll notify you when something happens</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
 
             {/* Dropdown Menu */}
             <AnimatePresence>

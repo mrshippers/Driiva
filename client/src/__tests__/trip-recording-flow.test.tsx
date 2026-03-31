@@ -86,7 +86,13 @@ const mockTrackerPause = vi.fn();
 const mockTrackerResume = vi.fn();
 const mockRequestPermission = vi.fn().mockResolvedValue(true);
 
-const mockTrackerState = {
+const mockTrackerState: {
+  isTracking: boolean; isPaused: boolean; isPermissionGranted: boolean; isPermissionDenied: boolean;
+  currentPosition: { latitude: number; longitude: number; accuracy: number; altitude: null; altitudeAccuracy: null; heading: null; speed: number; timestamp: number };
+  pointCount: number; totalDistance: number; error: string | null; errorMessage: string | null;
+  start: typeof mockTrackerStart; stop: typeof mockTrackerStop; pause: typeof mockTrackerPause; resume: typeof mockTrackerResume;
+  clearError: ReturnType<typeof vi.fn>; getPoints: ReturnType<typeof vi.fn>; requestPermission: typeof mockRequestPermission;
+} = {
   isTracking: false,
   isPaused: false,
   isPermissionGranted: true,
@@ -121,7 +127,11 @@ const mockTelematicsStopCollection = vi.fn().mockResolvedValue({
   timestamp: Date.now(),
 });
 
-const mockTelematicsState = {
+const mockTelematicsState: {
+  isCollecting: boolean; isPermissionGranted: boolean; currentData: null; metrics: null; error: string | null;
+  summary: null; requestPermissions: typeof mockTelematicsRequestPermissions; startCollection: typeof mockTelematicsStartCollection;
+  stopCollection: typeof mockTelematicsStopCollection; clearError: ReturnType<typeof vi.fn>; simulateHapticFeedback: ReturnType<typeof vi.fn>;
+} = {
   isCollecting: false,
   isPermissionGranted: true,
   currentData: null,
