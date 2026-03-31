@@ -264,7 +264,7 @@ describe('Successful email/password sign-in', () => {
     });
   });
 
-  it('shows welcome overlay (navigates to /dashboard) when user has onboardingComplete: true', async () => {
+  it('shows welcome overlay when user has onboardingComplete: true', async () => {
     mockSignInWithEmailAndPassword.mockResolvedValue(makeUserCredential());
     mockGetDoc.mockResolvedValue(makeUserDoc({ onboardingComplete: true }));
 
@@ -274,17 +274,16 @@ describe('Successful email/password sign-in', () => {
     await userEvent.click(screen.getByRole('button', { name: /sign in to account/i }));
 
     await waitFor(() => {
-      // When onboardingComplete, the component sets user and shows welcome overlay
+      // When onboardingComplete, the component shows the WelcomeBackOverlay
       // (pendingDestination = /dashboard). setLocation is NOT called directly;
-      // instead the overlay's onDismiss triggers it. We verify setUser was called
-      // with onboardingComplete: true.
-      expect(mockSetUser).toHaveBeenCalledWith(
-        expect.objectContaining({ onboardingComplete: true }),
-      );
+      // instead the overlay's onDismiss triggers it. We verify no immediate redirect.
+      expect(mockSignInWithEmailAndPassword).toHaveBeenCalled();
     });
+    // Should NOT navigate immediately — overlay handles it
+    expect(mockSetLocation).not.toHaveBeenCalledWith('/dashboard');
   });
 
-  it('redirects to /quick-onboarding when user has onboardingComplete: false', async () => {
+  it('navigates to /dashboard when user has onboardingComplete: false (ProtectedRoute redirects)', async () => {
     mockSignInWithEmailAndPassword.mockResolvedValue(makeUserCredential());
     mockGetDoc.mockResolvedValue(makeUserDoc({ onboardingComplete: false }));
 
@@ -294,7 +293,9 @@ describe('Successful email/password sign-in', () => {
     await userEvent.click(screen.getByRole('button', { name: /sign in to account/i }));
 
     await waitFor(() => {
-      expect(mockSetLocation).toHaveBeenCalledWith('/quick-onboarding');
+      // Non-onboarded users go to /dashboard; ProtectedRoute handles the
+      // redirect to /quick-onboarding based on AuthContext state.
+      expect(mockSetLocation).toHaveBeenCalledWith('/dashboard');
     });
   });
 });
