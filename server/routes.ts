@@ -21,7 +21,7 @@ import { insertTripSchema, insertIncidentSchema } from "@shared/schema";
 import { z } from "zod";
 import { authService } from "./auth";
 import { webauthnService } from "./webauthn";
-import { authLimiter, tripDataLimiter, webhookLimiter } from "./middleware/security";
+import { authLimiter, tripDataLimiter, webhookLimiter, coachLimiter } from "./middleware/security";
 import { gdprDeleteLimiter, poolModificationLimiter } from "./middleware/rateLimiter";
 import {
   verifyFirebaseAuth,
@@ -210,7 +210,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.json(options);
     } catch (error: any) {
       console.error("WebAuthn registration start error:", error);
-      res.status(400).json({ message: error.message || "Failed to generate registration options" });
+      res.status(400).json({ message: "Failed to generate registration options" });
     }
   });
 
@@ -227,7 +227,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
     } catch (error: any) {
       console.error("WebAuthn registration complete error:", error);
-      res.status(500).json({ message: error.message || "Registration failed" });
+      res.status(500).json({ message: "Registration failed" });
     }
   });
 
@@ -239,7 +239,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.json(options);
     } catch (error: any) {
       console.error("WebAuthn authentication start error:", error);
-      res.status(400).json({ message: error.message || "Failed to generate authentication options" });
+      res.status(400).json({ message: "Failed to generate authentication options" });
     }
   });
 
@@ -256,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
     } catch (error: any) {
       console.error("WebAuthn authentication complete error:", error);
-      res.status(500).json({ message: error.message || "Authentication failed" });
+      res.status(500).json({ message: "Authentication failed" });
     }
   });
 
@@ -336,7 +336,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       });
     } catch (error: any) {
       console.error("Dashboard error details:", error);
-      res.status(500).json({ message: "Error fetching dashboard data: " + error.message });
+      res.status(500).json({ message: "Error fetching dashboard data" });
     }
   });
 
@@ -422,7 +422,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           nightDrivingScore: (profile.nightDrivingScore || 0) + (metrics.nightDriving ? 1 : 0),
           corneringScore: (profile.corneringScore || 0) + metrics.sharpCorners,
           totalTrips: totalTrips + 1,
-          totalMiles: (Number(profile.totalMiles) + metrics.distanceKm).toString() // Add km
+          totalMiles: (Number(profile.totalMiles) + metrics.distanceKm * 0.621371).toString() // Convert km to miles
         });
 
         // Update leaderboard and bust cache
@@ -441,7 +441,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         anomalies: metrics.anomalies
       });
     } catch (error: any) {
-      res.status(500).json({ message: "Error processing trip: " + error.message });
+      res.status(500).json({ message: "Error processing trip" });
     }
   });
 
@@ -469,7 +469,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const trips = await storage.getUserTrips(userId, limit, offset);
       res.json(trips);
     } catch (error: any) {
-      res.status(500).json({ message: "Error fetching trips: " + error.message });
+      res.status(500).json({ message: "Error fetching trips" });
     }
   });
 
@@ -487,7 +487,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
       res.json(score);
     } catch (error: any) {
-      res.status(500).json({ message: "Error fetching weekly score: " + error.message });
+      res.status(500).json({ message: "Error fetching weekly score" });
     }
   });
 
@@ -505,7 +505,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
       res.json(score);
     } catch (error: any) {
-      res.status(500).json({ message: "Error fetching monthly score: " + error.message });
+      res.status(500).json({ message: "Error fetching monthly score" });
     }
   });
 
@@ -520,7 +520,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const data = await scoreAggregation.getTimeSeriesData(userId, startDate, endDate, granularity);
       res.json(data);
     } catch (error: any) {
-      res.status(500).json({ message: "Error fetching time-series data: " + error.message });
+      res.status(500).json({ message: "Error fetching time-series data" });
     }
   });
 
@@ -533,7 +533,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const trend = await scoreAggregation.getScoreTrend(userId, period);
       res.json(trend);
     } catch (error: any) {
-      res.status(500).json({ message: "Error fetching score trend: " + error.message });
+      res.status(500).json({ message: "Error fetching score trend" });
     }
   });
 
@@ -558,7 +558,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           errors: error.errors 
         });
       } else {
-        res.status(500).json({ message: "Error reporting incident: " + error.message });
+        res.status(500).json({ message: "Error reporting incident" });
       }
     }
   });
@@ -569,7 +569,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const pool = await storage.getCommunityPool();
       res.json(pool);
     } catch (error: any) {
-      res.status(500).json({ message: "Error fetching community pool: " + error.message });
+      res.status(500).json({ message: "Error fetching community pool" });
     }
   });
 
@@ -580,7 +580,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const pool = await storage.updateCommunityPool(poolData);
       res.json(pool);
     } catch (error: any) {
-      res.status(500).json({ message: "Error updating community pool: " + error.message });
+      res.status(500).json({ message: "Error updating community pool" });
     }
   });
 
@@ -600,7 +600,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       setCachedLeaderboard(cacheKey, leaderboard);
       res.json(leaderboard);
     } catch (error: any) {
-      res.status(500).json({ message: "Error fetching leaderboard: " + error.message });
+      res.status(500).json({ message: "Error fetching leaderboard" });
     }
   });
 
@@ -610,7 +610,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const achievements = await storage.getAchievements();
       res.json(achievements);
     } catch (error: any) {
-      res.status(500).json({ message: "Error fetching achievements: " + error.message });
+      res.status(500).json({ message: "Error fetching achievements" });
     }
   });
 
@@ -621,7 +621,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const achievements = await storage.getUserAchievements(userId);
       res.json(achievements);
     } catch (error: any) {
-      res.status(500).json({ message: "Error fetching user achievements: " + error.message });
+      res.status(500).json({ message: "Error fetching user achievements" });
     }
   });
 
@@ -632,7 +632,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const refund = telematicsProcessor.calculateRefund(personalScore, poolSafetyFactor, premiumAmount);
       res.json({ refund });
     } catch (error: any) {
-      res.status(500).json({ message: "Error simulating refund: " + error.message });
+      res.status(500).json({ message: "Error simulating refund" });
     }
   });
 
@@ -659,7 +659,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       res.json(insights);
     } catch (error: any) {
-      res.status(500).json({ message: "Error generating insights: " + error.message });
+      res.status(500).json({ message: "Error generating insights" });
     }
   });
 
@@ -673,7 +673,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.setHeader("Content-Disposition", `attachment; filename=driiva-data-${userId}.json`);
       res.json(userData);
     } catch (error: any) {
-      res.status(500).json({ message: "Error exporting data: " + error.message });
+      res.status(500).json({ message: "Error exporting data" });
     }
   });
 
@@ -684,7 +684,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       await storage.deleteUserData(userId);
       res.json({ message: "User data deleted successfully" });
     } catch (error: any) {
-      res.status(500).json({ message: "Error deleting user data: " + error.message });
+      res.status(500).json({ message: "Error deleting user data" });
     }
   });
 
@@ -693,24 +693,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   // AI Driiva — structured driving feedback per trip
   // -------------------------------------------------------------------------
 
-  const coachRateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-  app.post("/api/ai/coach", requireAuth, async (req: AuthRequest, res) => {
+  // coachLimiter: 5 req/min per user, distributed-safe (see middleware/security.ts)
+  app.post("/api/ai/coach", requireAuth, coachLimiter, async (req: AuthRequest, res) => {
     try {
-      const uid = req.auth!.uid;
-
-      // Simple in-memory rate limit: 10 requests / hour / user
-      const now = Date.now();
-      const bucket = coachRateLimitMap.get(uid);
-      if (bucket && bucket.resetAt > now) {
-        if (bucket.count >= 10) {
-          return res.status(429).json({ message: "Rate limit exceeded. Try again later." });
-        }
-        bucket.count++;
-      } else {
-        coachRateLimitMap.set(uid, { count: 1, resetAt: now + 3600_000 });
-      }
-
       const {
         score,
         scoreBreakdown,
@@ -821,7 +806,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.json(result);
     } catch (error: any) {
       console.error("[AI Driiva] Error:", error);
-      res.status(500).json({ message: "AI Coach error: " + error.message });
+      res.status(500).json({ message: "AI Coach error" });
     }
   });
 
@@ -867,7 +852,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       });
     } catch (error: any) {
       console.error("AI backend error:", error);
-      res.status(500).json({ message: "AI backend error: " + error.message });
+      res.status(500).json({ message: "AI backend error" });
     }
   });
 
@@ -978,7 +963,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(503).json({ message: "Stripe is not configured on this environment" });
       }
       console.error("[Stripe] create-subscription error:", error);
-      res.status(500).json({ message: error.message || "Failed to create subscription" });
+      res.status(500).json({ message: "Failed to create subscription" });
     }
   });
 
@@ -1022,7 +1007,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(503).json({ message: "Stripe is not configured on this environment" });
       }
       console.error("[Stripe] create-checkout error:", error);
-      res.status(500).json({ message: error.message || "Failed to create checkout session" });
+      res.status(500).json({ message: "Failed to create checkout session" });
     }
   });
 
@@ -1050,7 +1035,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(503).json({ message: "Stripe is not configured on this environment" });
       }
       console.error("[Stripe] billing-portal error:", error);
-      res.status(500).json({ message: error.message || "Failed to create billing portal session" });
+      res.status(500).json({ message: "Failed to create billing portal session" });
     }
   });
 
@@ -1140,7 +1125,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         .createHmac('sha256', rootSecret)
         .update(req.body as Buffer)
         .digest('hex');
-      if (sig !== expected) return res.status(400).json({ message: "Invalid Root webhook signature" });
+      if (!sig || !crypto.default.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return res.status(400).json({ message: "Invalid Root webhook signature" });
     }
 
     res.json({ received: true });

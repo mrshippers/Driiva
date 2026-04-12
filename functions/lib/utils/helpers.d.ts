@@ -5,6 +5,7 @@
  */
 import * as admin from 'firebase-admin';
 import { TripLocation } from '../types';
+import { haversineMeters } from '../shared/tripProcessor';
 /**
  * Get current pool period string (e.g., "2026-02")
  */
@@ -38,9 +39,10 @@ export declare function buildRouteSummary(start: TripLocation, end: TripLocation
  */
 export declare function truncateAddress(address: string | null): string;
 /**
- * Calculate distance between two coordinates using Haversine formula
+ * Calculate distance between two coordinates using Haversine formula.
+ * Delegates to the canonical shared/tripProcessor.ts implementation.
  */
-export declare function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number;
+export declare const calculateDistance: typeof haversineMeters;
 /**
  * Check if timestamp is during night hours (10 PM - 6 AM)
  */
@@ -68,9 +70,11 @@ export declare function detectAnomalies(trip: {
  */
 export declare function calculateRiskTier(score: number): 'low' | 'medium' | 'high';
 /**
- * Calculate projected refund based on score and contribution
+ * Calculate projected refund based on score and contribution.
+ * @deprecated Use shared/refundCalculator.ts::calculateRefundCents for new code.
+ * Kept for backward compatibility — delegates to the canonical formula.
  */
-export declare function calculateProjectedRefund(score: number, contributionCents: number, safetyFactor: number, refundRate: number): number;
+export declare function calculateProjectedRefund(score: number, contributionCents: number, safetyFactor: number, _refundRate: number): number;
 import { TripPoint, ComputedTripMetrics } from '../types';
 /**
  * Compute trip metrics from raw GPS points

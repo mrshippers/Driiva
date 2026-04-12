@@ -26,7 +26,7 @@ export function registerAuthRoutes(app: Express) {
       res.json(userWithoutPassword);
     } catch (error: any) {
       console.error("Login error:", error);
-      res.status(500).json({ message: "Login failed: " + error.message });
+      res.status(500).json({ message: "Login failed" });
     }
   });
 
@@ -73,18 +73,10 @@ export function registerAuthRoutes(app: Express) {
       if (error.message.includes('UNIQUE constraint failed')) {
         return res.status(409).json({ message: "Username or email already exists" });
       }
-      res.status(500).json({ message: "Registration failed: " + error.message });
+      res.status(500).json({ message: "Registration failed" });
     }
   });
 
-  // Firebase Authentication placeholder
-  app.post("/api/auth/firebase", authLimiter, async (req, res) => {
-    try {
-      // TODO: Implement Firebase authentication when needed
-      res.status(501).json({ message: "Firebase authentication not implemented yet" });
-    } catch (error) {
-      console.error("Firebase auth error:", error);
-      res.status(401).json({ message: "Invalid token" });
-    }
-  });
+  // Firebase Authentication — real implementation is in server/routes.ts
+  // This stub is intentionally removed to avoid shadowing the working endpoint.
 }

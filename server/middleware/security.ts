@@ -1,46 +1,64 @@
 import express from 'express';
-import rateLimit from 'express-rate-limit';
+import { makeRateLimiter, normalizeIp } from './distributedRateLimit';
 
 /**
- * Normalize key for rate limiting: strip IPv4-mapped IPv6 prefix (::ffff:)
- * so ::ffff:1.2.3.4 and 1.2.3.4 are treated as the same client.
+ * Rate limiters — distributed-safe for Vercel serverless.
+ *
+ * In production these use Upstash Redis REST (UPSTASH_REDIS_REST_URL +
+ * UPSTASH_REDIS_REST_TOKEN) so counters are shared across all serverless
+ * invocations. Without those env vars they fall back to in-memory (fine
+ * for local dev; a warning is logged if NODE_ENV=production).
+ *
+ * Window / limit changes vs the old express-rate-limit config:
+ *   authLimiter:     was 5/15 min  → now 10/1 min   (spec requirement)
+ *   apiLimiter:      was 100/15 min → now 100/1 min  (spec requirement)
+ *   webhookLimiter:  unchanged 10/1 min
+ *   tripDataLimiter: unchanged 30/5 min
  */
-const normalizeIp = (req: express.Request): string =>
-  (req.ip ?? 'unknown').replace(/^::ffff:/, '');
 
-// Rate limiting configuration
-export const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
-  message: 'Too many authentication attempts, please try again later',
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: normalizeIp,
-});
-
-export const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
-  message: 'Too many requests from this IP, please try again later',
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: normalizeIp,
-});
-
-// Webhook limiter for Stripe
-export const webhookLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
+// /api/auth/* — 10 requests per minute per IP
+export const authLimiter = makeRateLimiter({
+  windowMs: 60 * 1000,
   max: 10,
-  skipSuccessfulRequests: true,
-  keyGenerator: normalizeIp,
+  keyGenerator: (req) => `auth:${normalizeIp(req)}`,
+  message: 'Too many authentication attempts, please try again later.',
 });
 
-// General API limiter for trip data
-export const tripDataLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
+// General /api/* — 100 requests per minute per IP
+export const apiLimiter = makeRateLimiter({
+  windowMs: 60 * 1000,
+  max: 100,
+  keyGenerator: (req) => `api:${normalizeIp(req)}`,
+  message: 'Too many requests from this IP, please try again later.',
+});
+
+// Stripe webhook — 10 per minute per IP
+export const webhookLimiter = makeRateLimiter({
+  windowMs: 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => `webhook:${normalizeIp(req)}`,
+  message: 'Too many webhook requests.',
+});
+
+// Trip data — 30 per 5 minutes per IP
+export const tripDataLimiter = makeRateLimiter({
+  windowMs: 5 * 60 * 1000,
   max: 30,
-  message: 'Too many trip data requests',
-  keyGenerator: normalizeIp,
+  keyGenerator: (req) => `trip:${normalizeIp(req)}`,
+  message: 'Too many trip data requests.',
+});
+
+// /api/ai/coach — 5 requests per minute per authenticated user ID
+// Exported so routes.ts can apply it as middleware on the coach endpoint.
+export const coachLimiter = makeRateLimiter({
+  windowMs: 60 * 1000,
+  max: 5,
+  // req.auth is set by verifyFirebaseAuth before this middleware runs
+  keyGenerator: (req) => {
+    const authReq = req as express.Request & { auth?: { uid?: string } };
+    return `coach:${authReq.auth?.uid ?? normalizeIp(req)}`;
+  },
+  message: 'AI coach rate limit exceeded. Please wait before sending another request.',
 });
 
 // Enhanced security headers

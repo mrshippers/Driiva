@@ -32,6 +32,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { haversineMeters } from '@shared/tripProcessor';
 
 // ============================================================================
 // CONSTANTS
@@ -50,7 +51,6 @@ const MAX_VALID_SPEED_MS = 89.4;
 const MAX_TELEPORT_SPEED_MS = 100; // m/s
 
 /** Earth mean radius for Haversine. */
-const EARTH_RADIUS_M = 6_371_000;
 
 /**
  * When in stationary mode, fire a lightweight getCurrentPosition this often.
@@ -144,25 +144,7 @@ export type UseDriivaGeolocationResult = {
 // UTILITIES
 // ============================================================================
 
-/**
- * Haversine great-circle distance in metres.
- * Used as a fallback speed estimate when coords.speed is null (common on
- * iOS PWA) and to detect GPS teleportation jumps.
- */
-function haversineMeters(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number,
-): number {
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-  return EARTH_RADIUS_M * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
+// Haversine — canonical source: shared/tripProcessor.ts (imported at top of file)
 
 // ============================================================================
 // HOOK

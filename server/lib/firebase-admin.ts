@@ -60,16 +60,22 @@ async function verifyViaRestApi(idToken: string): Promise<{ uid: string; email?:
 }
 
 export async function verifyFirebaseToken(idToken: string): Promise<{ uid: string; email?: string } | null> {
-  // Try Admin SDK first (fastest, fully offline)
   const firebase = getFirebaseAdmin();
   if (firebase) {
     try {
       const decoded = await firebase.auth().verifyIdToken(idToken);
       return { uid: decoded.uid, email: decoded.email };
     } catch {
-      // Fall through to REST API
+      return null;
     }
   }
-  // Fallback: REST API — works without a service account key
+
+  // In production, require the Admin SDK — the REST fallback does not verify JWT signatures.
+  if (process.env.NODE_ENV === "production") {
+    console.error("[firebase-admin] CRITICAL: Admin SDK not initialised in production. Set FIREBASE_SERVICE_ACCOUNT_KEY or GOOGLE_APPLICATION_CREDENTIALS.");
+    return null;
+  }
+
+  // Development-only fallback: REST API (does not cryptographically verify the JWT)
   return verifyViaRestApi(idToken);
 }

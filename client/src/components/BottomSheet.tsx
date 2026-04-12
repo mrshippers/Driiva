@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface BottomSheetProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export default function BottomSheet({ isOpen, onClose }: BottomSheetProps) {
   const [severity, setSeverity] = useState("");
   
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const reportIncidentMutation = useMutation({
@@ -70,7 +72,7 @@ export default function BottomSheet({ isOpen, onClose }: BottomSheetProps) {
     }
 
     const incidentData = {
-      userId: 2, // Mock user ID
+      userId: user?.id ?? 0,
       type: incidentType,
       description: description.trim(),
       location: location.trim() || undefined,

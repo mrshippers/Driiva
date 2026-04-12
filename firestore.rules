@@ -209,7 +209,10 @@ service cloud.firestore {
     // =========================================================================
 
     // Leaderboard contains displayName + photoURL — restrict to authenticated users (GDPR).
+<<<<<<< HEAD
     // Unauthenticated public read was previously allowed but publishes real user names/photos.
+=======
+>>>>>>> dde6db6 (feat: server hardening, distributed rate limiting, shared trip processor, and refund calculator)
     match /leaderboard/{leaderboardId} {
       allow read: if isAuthenticated();
       allow write: if false;

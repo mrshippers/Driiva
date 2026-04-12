@@ -5,6 +5,7 @@
  * Shared helper functions for Cloud Functions.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.calculateDistance = void 0;
 exports.getCurrentPoolPeriod = getCurrentPoolPeriod;
 exports.getPreviousPoolPeriod = getPreviousPoolPeriod;
 exports.getShareId = getShareId;
@@ -13,13 +14,13 @@ exports.getCurrentPeriodForType = getCurrentPeriodForType;
 exports.weightedAverage = weightedAverage;
 exports.buildRouteSummary = buildRouteSummary;
 exports.truncateAddress = truncateAddress;
-exports.calculateDistance = calculateDistance;
 exports.isNightTime = isNightTime;
 exports.isRushHour = isRushHour;
 exports.detectAnomalies = detectAnomalies;
 exports.calculateRiskTier = calculateRiskTier;
 exports.calculateProjectedRefund = calculateProjectedRefund;
 exports.computeTripMetrics = computeTripMetrics;
+const tripProcessor_1 = require("../shared/tripProcessor");
 /**
  * Get current pool period string (e.g., "2026-02")
  */
@@ -100,20 +101,10 @@ function truncateAddress(address) {
     return firstPart.length > 20 ? firstPart.substring(0, 17) + '...' : firstPart;
 }
 /**
- * Calculate distance between two coordinates using Haversine formula
+ * Calculate distance between two coordinates using Haversine formula.
+ * Delegates to the canonical shared/tripProcessor.ts implementation.
  */
-function calculateDistance(lat1, lng1, lat2, lng2) {
-    const R = 6371e3; // Earth's radius in meters
-    const φ1 = lat1 * Math.PI / 180;
-    const φ2 = lat2 * Math.PI / 180;
-    const Δφ = (lat2 - lat1) * Math.PI / 180;
-    const Δλ = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-        Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // Distance in meters
-}
+exports.calculateDistance = tripProcessor_1.haversineMeters;
 /**
  * Check if timestamp is during night hours (10 PM - 6 AM)
  */
@@ -159,7 +150,7 @@ function detectAnomalies(trip) {
         }
     }
     // Check for GPS jumps (straight-line distance much less than route distance)
-    const straightLineDistance = calculateDistance(trip.startLocation.lat, trip.startLocation.lng, trip.endLocation.lat, trip.endLocation.lng);
+    const straightLineDistance = (0, exports.calculateDistance)(trip.startLocation.lat, trip.startLocation.lng, trip.endLocation.lat, trip.endLocation.lng);
     // If route is more than 5x the straight-line distance, might have GPS issues
     if (trip.distanceMeters > straightLineDistance * 5 && straightLineDistance > 100) {
         anomalies.hasGpsJumps = true;
@@ -181,16 +172,16 @@ function calculateRiskTier(score) {
     return 'high';
 }
 /**
- * Calculate projected refund based on score and contribution
+ * Calculate projected refund based on score and contribution.
+ * @deprecated Use shared/refundCalculator.ts::calculateRefundCents for new code.
+ * Kept for backward compatibility — delegates to the canonical formula.
  */
-function calculateProjectedRefund(score, contributionCents, safetyFactor, refundRate) {
-    // Base refund rate varies by score (5-15%)
-    const scoreMultiplier = Math.min(1, Math.max(0, (score - 50) / 50)); // 0 at 50, 1 at 100
-    const adjustedRefundRate = 0.05 + (refundRate - 0.05) * scoreMultiplier;
-    // Apply safety factor
-    const baseRefund = contributionCents * adjustedRefundRate;
-    const adjustedRefund = baseRefund * safetyFactor;
-    return Math.round(adjustedRefund);
+function calculateProjectedRefund(score, contributionCents, safetyFactor, _refundRate) {
+    // Canonical formula: blended score → refund rate 5-15% → apply safety factor
+    const clamped = Math.max(50, Math.min(100, score));
+    const rate = 0.05 + ((clamped - 50) / 50) * 0.10;
+    const rawRefund = contributionCents * rate * safetyFactor;
+    return Math.round(rawRefund);
 }
 /**
  * Compute trip metrics from raw GPS points
@@ -207,7 +198,7 @@ function computeTripMetrics(points, startTimestampMs) {
     for (let i = 1; i < sortedPoints.length; i++) {
         const prev = sortedPoints[i - 1];
         const curr = sortedPoints[i];
-        totalDistanceMeters += calculateDistance(prev.lat, prev.lng, curr.lat, curr.lng);
+        totalDistanceMeters += (0, exports.calculateDistance)(prev.lat, prev.lng, curr.lat, curr.lng);
     }
     // 2. Compute duration from first to last point
     const firstPoint = sortedPoints[0];

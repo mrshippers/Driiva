@@ -6,6 +6,7 @@
 
 import * as admin from 'firebase-admin';
 import { TripLocation } from '../types';
+import { haversineMeters } from '../shared/tripProcessor';
 
 /**
  * Get current pool period string (e.g., "2026-02")
@@ -101,27 +102,10 @@ export function truncateAddress(address: string | null): string {
 }
 
 /**
- * Calculate distance between two coordinates using Haversine formula
+ * Calculate distance between two coordinates using Haversine formula.
+ * Delegates to the canonical shared/tripProcessor.ts implementation.
  */
-export function calculateDistance(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number
-): number {
-  const R = 6371e3; // Earth's radius in meters
-  const φ1 = lat1 * Math.PI / 180;
-  const φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lng2 - lng1) * Math.PI / 180;
-
-  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return R * c; // Distance in meters
-}
+export const calculateDistance = haversineMeters;
 
 /**
  * Check if timestamp is during night hours (10 PM - 6 AM)
@@ -212,30 +196,27 @@ export function calculateRiskTier(score: number): 'low' | 'medium' | 'high' {
 }
 
 /**
- * Calculate projected refund based on score and contribution
+ * Calculate projected refund based on score and contribution.
+ * @deprecated Use shared/refundCalculator.ts::calculateRefundCents for new code.
+ * Kept for backward compatibility — delegates to the canonical formula.
  */
 export function calculateProjectedRefund(
   score: number,
   contributionCents: number,
   safetyFactor: number,
-  refundRate: number
+  _refundRate: number
 ): number {
-  // Base refund rate varies by score (5-15%)
-  const scoreMultiplier = Math.min(1, Math.max(0, (score - 50) / 50)); // 0 at 50, 1 at 100
-  const adjustedRefundRate = 0.05 + (refundRate - 0.05) * scoreMultiplier;
-  
-  // Apply safety factor
-  const baseRefund = contributionCents * adjustedRefundRate;
-  const adjustedRefund = baseRefund * safetyFactor;
-  
-  return Math.round(adjustedRefund);
+  // Canonical formula: blended score → refund rate 5-15% → apply safety factor
+  const clamped = Math.max(50, Math.min(100, score));
+  const rate = 0.05 + ((clamped - 50) / 50) * 0.10;
+  const rawRefund = contributionCents * rate * safetyFactor;
+  return Math.round(rawRefund);
 }
 
 // ============================================================================
 // TRIP METRICS COMPUTATION
 // ============================================================================
-// Canonical source for distance (m) and duration (s) formulas: shared/tripProcessor.ts.
-// This implementation must match (Haversine R=6371e3, duration = last−first timestamp).
+// Uses the canonical shared/tripProcessor.ts (copied at build time via prebuild).
 
 import { TripPoint, ScoreBreakdown, TripEvents, ComputedTripMetrics } from '../types';
 

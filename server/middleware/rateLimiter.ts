@@ -4,25 +4,25 @@
  *
  * - gdprDeleteLimiter: DELETE /api/gdpr/delete/:userId — account wipe (strict)
  * - poolModificationLimiter: PUT /api/community-pool — admin pool updates
- * - authSensitiveLimiter: login/register (reuse from security or define here)
+ *
+ * Both are distributed-safe (backed by Upstash Redis when env vars are set).
+ * See distributedRateLimit.ts for the store implementation and swap guide.
  */
 
-import rateLimit from "express-rate-limit";
+import { makeRateLimiter, normalizeIp } from "./distributedRateLimit";
 
-/** GDPR delete: very strict — e.g. 3 attempts per hour per IP. */
-export const gdprDeleteLimiter = rateLimit({
+/** GDPR delete: very strict — 3 attempts per hour per IP. */
+export const gdprDeleteLimiter = makeRateLimiter({
   windowMs: 60 * 60 * 1000,
   max: 3,
-  message: { message: "Too many delete attempts. Try again later.", code: "RATE_LIMIT_GDPR" },
-  standardHeaders: true,
-  legacyHeaders: false,
+  keyGenerator: (req) => `gdpr:${normalizeIp(req)}`,
+  message: "Too many delete attempts. Try again later.",
 });
 
 /** Community pool modifications: 10 per 15 min per IP. */
-export const poolModificationLimiter = rateLimit({
+export const poolModificationLimiter = makeRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 10,
-  message: { message: "Too many pool update attempts.", code: "RATE_LIMIT_POOL" },
-  standardHeaders: true,
-  legacyHeaders: false,
+  keyGenerator: (req) => `pool:${normalizeIp(req)}`,
+  message: "Too many pool update attempts.",
 });

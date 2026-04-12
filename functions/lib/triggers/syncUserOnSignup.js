@@ -55,12 +55,18 @@ exports.syncUserOnSignup = functions
         return;
     }
     try {
-        const pgId = await (0, neon_1.insertUserFromFirebase)(uid, emailStr, displayName ?? null);
+        // 10s timeout — Neon cold-starts can take 20-27s; abort early and let
+        // the server upsert handle it on next login. Non-critical: Firestore is primary.
+        const pgId = await Promise.race([
+            (0, neon_1.insertUserFromFirebase)(uid, emailStr, displayName ?? null),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Neon insert timeout after 10s')), 10000)),
+        ]);
         functions.logger.info('Synced Firebase user to PostgreSQL', { uid, email: emailStr, pgUserId: pgId });
     }
     catch (error) {
-        functions.logger.error('Failed to sync user to PostgreSQL', { uid, error });
-        throw error;
+        // Non-critical — server upserts on next authenticated request via /api/profile/me.
+        // Do NOT re-throw; retrying on Neon cold-start compounds the delay for the user.
+        functions.logger.error('Failed to sync user to PostgreSQL (non-fatal)', { uid, error });
     }
 }));
 //# sourceMappingURL=syncUserOnSignup.js.map
