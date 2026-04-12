@@ -1,193 +1,183 @@
-# CLAUDE.md
+# Driiva — Claude Code Configuration
 
-**Last updated:** 13 March 2025
+## Project Context
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Driiva Ltd is a telematics insurtech app targeting young UK drivers.
+Core proposition: telematics-driven cashback premiums, postcode penalty reduction, fraud mitigation.
+Sharia-compliant angle — targets young drivers and Muslim communities.
+Solo founder build. Pre-raise. Demo-prep phase with Keith Cheng.
 
-**For every session in this repo, start with:**
-*"Read CLAUDE.md and ROADMAP.md. Work on the next unchecked ticket only, and update the ticket list when done."*
+**Current priorities:**
+- Keith Cheng demo prep
+- Firebase auth delay fix (~27s signup — critical blocker)
+- CI pipeline stabilisation
+- PWA conversion consideration
+- Q2–Q3 2026 raise (angels + seed, insurtech OR Muslim/ethical finance)
+- Waitlist growth (1,000 signups = raise accelerant)
 
----
-
-## What Driiva is
-
-Driiva is a UK telematics-based insurance platform: record a drive, get a 0–100 score, earn a share of a community pool back as a cash reward. The stack is Firebase-first (Auth + Firestore + Cloud Functions), with a Node/Express server deployed on Vercel and a Python FastAPI classifier for trip segmentation.
-
-Target user: UK drivers who want to be rewarded for driving safely. The scoring is deterministic, the pool is actuarially capped, and the compliance posture is ICO-registered + FCA-sandbox-aligned.
-
----
-
-## Commands
-
-```bash
-# Development
-npm run dev                # Start Express server + Vite dev server (port 3001)
-
-# Build
-npm run build              # vite build (client) + esbuild bundle (server)
-npm start                  # Start production server (dist/index.js)
-
-# Type checking
-npm run check              # tsc strict mode
-
-# Testing
-npm test                   # vitest run (all tests)
-npm run test:watch         # vitest watch mode
-npm run test:coverage      # vitest with v8 coverage
-
-# Run a single test file
-npm test -- client/src/__tests__/scoring.test.ts
-npm test -- --grep "scoring"
-
-# Database
-npm run db:push            # Sync Drizzle schema to Neon PostgreSQL
-```
-
-Cloud Functions (from `functions/`):
-```bash
-npm run build              # tsc compile
-npm test                   # vitest run
-npm run serve              # firebase emulators:start --only functions
-npm run deploy             # firebase deploy --only functions
-```
-
-Python classifier (from `api/`, separate process):
-```bash
-pip install -r requirements.txt
-uvicorn main:app --port 5000
-```
-
-See **RUNBOOK.md** for full local dev, deploy, and debug procedures.
+**The raise story:**
+- 30,000 policies = ~£18M gross premium (£600 avg)
+- £60M conservative valuation at 3-4x GWP multiple
+- One broker/MGA letter of intent = investor gold
+- Channel distribution over volume marketing post-raise
 
 ---
 
-## Stack
+## Skill Router
 
-| Layer | Technology |
-| ------------------------ | ------------------------------------------------------------------------------- |
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, Framer Motion, Wouter, TanStack Query |
-| Maps | Leaflet (OpenStreetMap) |
-| Auth | Firebase Authentication (email/password + Google) |
-| Database | Cloud Firestore (primary); Neon PostgreSQL (telematics/server-side) |
-| Backend API | Node.js Express (`server/`) + Firebase Cloud Functions (`functions/`) |
-| AI | Anthropic Claude Sonnet 4 (trip analysis); feature-flagged |
-| Insurance API | Root Platform (scaffolded; needs credentials) |
-| Payments | Stripe (deps installed, not wired) |
-| Trip metrics (canonical) | `shared/tripProcessor.ts` — distance (m), duration (s) |
-| Trip classifier | Python Stop-Go-Classifier (`api/`); HTTP from TypeScript functions |
+The `skill-router` skill governs all dispatch in this project. On every task, check the skill
+registry below and load the appropriate SKILL.md before responding. Never answer from general
+knowledge when a purpose-built skill exists.
 
 ---
 
-## Hard Stops
+## Skill Registry
 
-These invariants are locked. Do not change them without explicit sign-off and a written ADR.
+### Core Dispatch
+| Skill | Trigger |
+|---|---|
+| `skill-router` | Boot sequence — runs first on every message |
+| `founder-ops` | Prioritisation, sprint planning, "what next", feeling stuck |
+| `planning-with-files` | Multi-step projects, >5 tool calls, complex builds |
+| `dispatching-parallel-agents` | 2+ independent parallelisable tasks |
 
-**Auth:** Firebase Auth is canonical. `server/auth.ts` (`SimpleAuthService`, bcrypt against Neon) is legacy-secondary — it exists for server-session patterns, not the UI login flow. The UI uses `onAuthStateChanged`. Never bypass `verifyFirebaseToken()` for protected API routes.
+### Build & Ship
+| Skill | Trigger |
+|---|---|
+| `stack-ship` | Deploy, Vercel, Firebase, Cloudflare DNS, Stripe, CI/CD, auth |
+| `systematic-debugging` | Bugs, errors, broken flows — especially auth delay and CI failures |
+| `test-driven-development` | Any new feature or bugfix — before writing code |
+| `test-fixing` | Failing tests, make tests pass |
+| `project-bootstrapper` | New project setup, scaffold, init |
+| `plan-implementer` | Implementing from a spec or plan |
+| `feature-planning` | Breaking down features into tasks |
 
-**Scoring determinism:** `shared/tripProcessor.ts` is the single source of truth for distance and duration. `computeDrivingScore()` in `functions/src/utils/helpers.ts` must remain deterministic — same inputs, same output, always. Historical trips are never retroactively modified after `status: completed`.
+### Agent Orchestration (Ruflo)
+| Skill | Trigger |
+|---|---|
+| `sparc-methodology` | Complex reasoning tasks, structured problem solving |
+| `flow-nexus-neural` | Neural agent coordination |
+| `flow-nexus-platform` | Platform-level agent orchestration |
+| `flow-nexus-swarm` | Swarm-mode multi-agent execution |
+| `swarm-advanced` | Advanced parallel agent workflows |
+| `swarm-orchestration` | Coordinating multiple agents on one task |
+| `stream-chain` | Chained agent pipelines |
+| `pair-programming` | Structured pair-programming mode |
+| `verification-quality` | Automated output quality checking |
 
-**Financials:** All money is integer cents, no floats, end-to-end. Hard cap: refund ≤ premium × 15%. The formula is `(0.8 × personalScore + 0.2 × communityScore) → refundRate 5%–15% × safetyFactor`. Do not touch this without actuary sign-off.
+### Memory & Reasoning (Ruflo)
+| Skill | Trigger |
+|---|---|
+| `v3-memory-unification` | Cross-session memory, persistent context |
+| `reasoningbank-agentdb` | Agent knowledge base, persistent agent memory |
+| `reasoningbank-intelligence` | Intelligence layer for reasoning tasks |
+| `agentdb-advanced` | Advanced agent database operations |
+| `agentdb-learning` | Agent learning patterns |
+| `agentdb-memory-patterns` | Memory pattern management |
+| `agentdb-optimization` | Agent performance optimisation |
+| `agentdb-vector-search` | Vector search across agent knowledge |
 
-**Real-time:** Firestore `onSnapshot` listeners only. There is no WebSocket server — the `ws` dep in `package.json` is unused/transitive. There is no SSE. Do not add a second real-time layer without a design doc.
+### Architecture & Code Quality (Ruflo v3)
+| Skill | Trigger |
+|---|---|
+| `v3-core-implementation` | Core feature implementation, clean architecture |
+| `v3-ddd-architecture` | Domain-driven design — use for Root API integration layer |
+| `v3-cli-modernization` | CLI tooling |
+| `v3-integration-deep` | Deep integration work — Root Platform API, telematics data |
+| `v3-mcp-optimization` | MCP server optimisation |
+| `v3-performance-optimization` | Performance profiling — auth speed, onboarding latency |
+| `v3-security-overhaul` | Security audit — critical for insurtech regulatory compliance |
+| `v3-swarm-coordination` | Swarm coordination at architecture level |
 
-**Firestore as primary DB:** All live user/trip/pool state lives in Firestore. Neon PostgreSQL is secondary and structured — synced one-way (Firestore → Neon) by Cloud Function triggers `syncTripOnComplete` and `syncUserOnSignup`. Never write to Neon from the client. Never treat Neon as the authoritative source for a Firestore collection.
+### GitHub & DevOps (Ruflo)
+| Skill | Trigger |
+|---|---|
+| `github-code-review` | PR code review |
+| `github-multi-repo` | Multi-repo operations |
+| `github-project-management` | GitHub Projects, issues, milestones |
+| `github-release-management` | Release tagging, changelogs |
+| `github-workflow-automation` | GitHub Actions, CI/CD automation — fix pipeline failures |
+| `hooks-automation` | Git hooks, pre-commit, pre-push |
+| `monitoring` | Monitoring setup, alerting — critical for demo readiness |
 
-**Scoring weights:** Speed 25%, Braking 25%, Acceleration 20%, Cornering 20%, Phone 10%. Phone is hardcoded to 100/100 — this is a known gap tracked in ROADMAP.md, not a bug.
+### GTM & Investor Relations
+| Skill | Trigger |
+|---|---|
+| `gtm-engine` | Investor outreach, broker emails, waitlist copy, pitch materials |
+| `qa-gate` | Any output with Driiva metrics, projections, policy numbers |
+| `humanizer` | Long-form copy, investor emails, public-facing text |
+| `internal-comms` | Internal docs, briefings, demo prep notes |
 
-**Audit trail:** `createdBy` / `updatedBy` fields are required on all sensitive and financial Firestore documents. Do not omit them.
+### Frontend & Design
+| Skill | Trigger |
+|---|---|
+| `frontend-design` | UI components, onboarding flow, PWA shell, glassmorphism system |
+| `web-artifacts-builder` | Complex multi-component artifacts |
+| `canvas-design` | Marketing assets, pitch deck visuals |
+| `dashboard-creator` | Telematics data dashboards, KPI views, investor metrics |
+
+### Documents & Files
+| Skill | Trigger |
+|---|---|
+| `docx` | Word documents, reports, investment memos |
+| `pdf` | PDF creation — pitch deck export, term sheets |
+| `pdf-reading` | Reading/extracting from PDFs |
+| `pptx` | Investor pitch deck |
+| `xlsx` | Financial models, policy projections, cap table |
+| `file-reading` | Any uploaded file not yet in context |
+
+### Research & Intelligence
+| Skill | Trigger |
+|---|---|
+| `last30days` | Insurtech trends, telematics regulation, competitor moves |
+| `conversation-analyzer` | Analysing Claude Code conversation patterns |
+| `code-auditor` | Codebase health, tech debt, security — pre-demo audit |
+| `ensemble-orchestrator` | Architecture decisions, multiple approaches |
+| `ensemble-solving` | Parallel solution generation |
+
+### Specialist
+| Skill | Trigger |
+|---|---|
+| `mcp-builder` | Building MCP servers — Root API, telematics data pipeline |
+| `skill-creator` | Creating or editing skills |
+| `prompt-engineer` | System prompt design, AI feature prompting |
+| `schedule` | Demo scheduling, raise timeline planning |
+| `sonnet-opus-prompt` | Model-specific prompting strategies |
 
 ---
 
-## Scaffolded (not live — don't assume these work)
+## Stack Reference
 
-- **Root Platform insurance** — API client in `functions/src/http/insurance.ts`. Needs sandbox credentials (`ROOT_API_KEY`, `ROOT_ENVIRONMENT=sandbox`) before any real-money flow. Until then, `/api/insurance` endpoints will fail.
-- **Stripe** — deps installed (`stripe@18.3`), routes scaffolded in `server/routes.ts`. Not wired end-to-end. No checkout, no webhook handling, no pool contributions connected.
-- **WebAuthn/Passkey** — `server/webauthn.ts` is fully implemented server-side (SimpleWebAuthn). Not wired to any frontend login flow yet.
-- **Staging Firebase project** — `driiva-staging` provisioned; manual steps remain (Blaze, deploy functions, Vercel staging). Not fully live yet.
-- **Python classifier** — lives in `api/` (FastAPI, port 5000), called via `CLASSIFIER_URL` env var. Not auto-started by `npm run dev`. Must be run separately or deployed to Cloud Run.
-- **XGBoost risk model** — referenced in ROADMAP.md, not yet implemented. `api/main.py` has a mock `score-trip` endpoint.
-- **Phone pickup detection** — scoring weight is 10% but hardcoded to 100. Accelerometer pattern recognition not implemented.
+- **Frontend:** Next.js / TypeScript
+- **Auth:** Firebase Auth (known issue: ~27s signup delay — fix before demo)
+- **Database:** Firebase Firestore + Neon DB
+- **ORM:** Drizzle ORM
+- **Payments:** Stripe
+- **Insurance Platform:** Root Insurance Platform API
+- **Deploy:** Vercel + Cloudflare
+- **PWA:** Under consideration
+- **Auth Enhancement:** WebAuthn / Passkeys (backend done, UI pending)
 
----
+## Known Blockers
 
-## Domain Map
+1. **Firebase auth delay (~27s)** — critical, must fix before Keith demo
+2. **CI pipeline failures** — Firebase org policy blocking SA key creation
+3. **WebAuthn UI** — backend complete, frontend pending
+4. **Waitlist** — exists but not actively driven to 1,000 target
 
-| Domain | Where it lives | Owner | Done for next milestone |
-| ---------------------- | -------------------------------------------------------------------------------- | ----------- | ------------------------------------------------ |
-| Product / core | `client/`, `server/`, `functions/`, `shared/`, `api/` | Keith Cheng (Product Lead) | Root creds wired; Stripe checkout live |
-| Telematics / AI | `api/main.py`, `functions/src/ai/`, `server/lib/aiInsights.ts` | Engineering | Phone detection wired; XGBoost model behind flag |
-| Marketing / brand | `attached_assets/` (logo PNGs, concept docs) | TBD | Brand kit indexed; owner named |
-| Compliance / GDPR | `client/src/pages/privacy.tsx`, `/terms`, `/trust`; `functions/src/http/gdpr.ts` | Legal + Eng | ICO registered; FCA sandbox ongoing |
-| Legal / contracts | `attached_assets/*.docx` | Legal | Docs moved to `legal/`; owner named |
-| Fundraising / investor | `attached_assets/` (concept framework, pricing PDFs) | Founder | Deck location pinned; one-pager live |
-| Ops / infra | `RUNBOOK.md`, `.github/workflows/`, `firebase.json`, `vercel.json` | Engineering | Staging project live; RUNBOOK.md current |
+## Raise Context
 
----
+- **Target:** Q2–Q3 2026
+- **Investor profile:** Angels + seed funds in insurtech OR Muslim/ethical finance
+- **Key signal:** One broker/MGA letter of intent changes investor conversations
+- **Channels post-raise:** Price comparison sites, IslamicFinanceGuru, Muslim community platforms
+- **Exit thesis:** Aviva, Admiral, LV pay for distribution + clean telematics data
 
-## Architecture overview
+## Constraints
 
-This is a monorepo: `client/` (React SPA), `server/` (Express), `functions/` (Firebase Cloud Functions), `shared/` (canonical types and trip math), `api/` (Python classifier). See **ARCHITECTURE.md** for the full technical spec.
-
-### Trip processing pipeline (critical path)
-
-```
-1. Trip recorded (GPS via client/src/pages/trip-recording.tsx → stored in tripPoints/{tripId})
-2. Firestore trigger (onTripStatusChange: recording → processing)
-   └─> functions/src/triggers/trips.ts
-   └─> Haversine distance via shared/tripProcessor.ts
-   └─> Python Stop-Go-Classifier (HTTP, CLASSIFIER_URL) → tripSegments/{tripId}
-3. Driving score computed (deterministic)
-   └─> functions/src/utils/helpers.ts::computeDrivingScore()
-   └─> Weights: Speed 25%, Braking 25%, Acceleration 20%, Cornering 20%, Phone 10%
-4. Refund pool share updated (onTripStatusChange: processing → completed)
-   └─> functions/src/triggers/trips.ts::updateDriverProfileAndPoolShare()
-```
-
-**Server-side path:** `server/lib/telematics.ts::TelematicsProcessor.processTrip()` mirrors the Functions pipeline for direct API calls.
-
-### Shared source of truth
-
-`shared/tripProcessor.ts` is imported by Cloud Functions, Express server, and all tests. **Never duplicate its logic elsewhere.** It exports: `haversineMeters`, `tripDistanceMeters`, `tripDurationSeconds`, `tripDistanceAndDuration`.
-
----
-
-## Firebase schema (Firestore)
-
-- **users/{userId}** — `drivingProfile` (score, totalTrips, totalMiles, scoreBreakdown), `activePolicy`, `poolShare`, `recentTrips[]`, `vehicle?`, `fcmTokens`, `settings`, `createdBy`/`updatedBy`.
-- **trips/{tripId}** — `userId`, `startedAt`/`endedAt`, `durationSeconds`, `startLocation`/`endLocation`, `distanceMeters`, `score`, `scoreBreakdown`, `events`, `status` (recording|processing|completed|failed|disputed).
-- **tripPoints/{tripId}** — Raw GPS: `points[]` with `t` (offset ms), `lat`, `lng`, `spd` (m/s×100), `hdg`, `acc`; optional `ax/ay/az`, `gx/gy/gz`. Long trips batched under `tripPoints/{tripId}/batches/{batchIndex}`.
-- **poolShares/{period_userId}** — Per-driver pool share; status active/finalized/paid_out. Amounts in integer cents.
-- **leaderboard/{period}** — Precomputed rankings (weekly/monthly/all_time).
-- **tripSegments/{tripId}** — Classifier output: stops, trip segments, samples (driving vs dwelling).
-- **communityPool** — Singleton pool state and safety factor.
-
-Full Firestore type definitions: `shared/firestore-types.ts`. Neon PostgreSQL schema: `shared/schema.ts`.
-
----
-
-## Scoring and refund pool
-
-- **Scoring:** `functions/src/utils/helpers.ts::computeDrivingScore()`. Events from `detectDrivingEvents()` (thresholds: −3.5 m/s² braking, 3.0 m/s² accel, 31.3 m/s speed). Deterministic — historical trips are never retroactively modified.
-- **Refund eligibility:** Personal score ≥ 70. Formula: `(0.8 × personalScore + 0.2 × communityScore=75) → refundRate 5%–15% × safetyFactor`. Hard cap: refund ≤ premium × 15%. All amounts in integer cents.
-
----
-
-## Trip classifier
-
-Python Stop-Go-Classifier (`api/main.py`, FastAPI). Called via HTTP from `functions/src/http/classifier.ts` (env: `CLASSIFIER_URL`). Thresholds: min stop interval 63s, relevant stop duration 178s. Output stored in `tripSegments/{tripId}`. Must be running independently — not part of `npm run dev`.
-
----
-
-## Conventions
-
-- TypeScript strict; async/await; no hardcoded secrets — env vars only.
-- Distances in meters, durations in seconds, financials in **integer cents** (no floats).
-- Timestamps: ISO 8601.
-- Audit trail: `createdBy`/`updatedBy` on sensitive and financial Firestore documents.
-- Feature flags: `VITE_FEATURE_AI_INSIGHTS`, `VITE_FEATURE_COMMUNITY_POOL`, `VITE_FEATURE_LEADERBOARD`.
-
----
-
-## Current roadmap
-
-See **ROADMAP.md** for the current sprint and ticket list (external memory; update when closing tickets).
+- Private repos — nothing public until explicitly ready
+- Security-conscious: insurtech = regulatory sensitivity, audit everything
+- ADHD-optimised workflow: reduce friction, eliminate initiation overhead
+- Never ask "want me to draft that?" — produce deliverables inline immediately
+- Anonymous monetisation preferred — no loud personal branding
+- Raise timeline is real: every week of delay = raise pushed back

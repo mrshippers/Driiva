@@ -777,7 +777,11 @@ export async function registerRoutes(app: Express): Promise<void> {
         }
         const anthropicData = await anthropicRes.json();
         const text = anthropicData.content?.[0]?.text ?? '{}';
-        result = JSON.parse(text);
+        try {
+          result = JSON.parse(text);
+        } catch {
+          throw new Error("AI provider returned non-JSON response");
+        }
       } else {
         const perplexityRes = await fetch("https://api.perplexity.ai/chat/completions", {
           method: "POST",
@@ -803,7 +807,11 @@ export async function registerRoutes(app: Express): Promise<void> {
         }
         const perplexityData = await perplexityRes.json();
         const raw = perplexityData.choices?.[0]?.message?.content ?? '{}';
-        result = JSON.parse(raw);
+        try {
+          result = JSON.parse(raw);
+        } catch {
+          throw new Error("AI provider returned non-JSON response");
+        }
       }
 
       if (!result.headline || !Array.isArray(result.tips) || !result.encouragement) {

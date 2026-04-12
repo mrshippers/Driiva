@@ -106,6 +106,14 @@ service cloud.firestore {
         allow read: if isOwner(userId);
         allow write: if false;
       }
+
+      // Pending Stripe payments (written by webhook handler via Admin SDK; client read-only)
+      // Explicit deny on write prevents a client from crafting a fake payment doc
+      // that could trigger the Cloud Function to bind a Root policy without real payment.
+      match /pendingPayments/{docId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
     }
 
     // =========================================================================
@@ -200,8 +208,10 @@ service cloud.firestore {
     // LEADERBOARD COLLECTION
     // =========================================================================
 
+    // Leaderboard contains displayName + photoURL — restrict to authenticated users (GDPR).
+    // Unauthenticated public read was previously allowed but publishes real user names/photos.
     match /leaderboard/{leaderboardId} {
-      allow read: if true;
+      allow read: if isAuthenticated();
       allow write: if false;
     }
 
