@@ -193,10 +193,7 @@ vi.mock('@/components/ui/tooltip', () => ({
   Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   TooltipContent: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
   TooltipProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  TooltipTrigger: React.forwardRef(({ children, asChild, ...props }: { children: React.ReactNode; asChild?: boolean } & Record<string, unknown>, _ref: React.Ref<unknown>) => {
-    if (asChild) return <>{children}</>;
-    return <span {...props}>{children}</span>;
-  }),
+  TooltipTrigger: ({ children }: { children: React.ReactNode; asChild?: boolean }) => <span>{children}</span>,
 }));
 
 // Lucide icons — render as simple spans to avoid SVG issues
