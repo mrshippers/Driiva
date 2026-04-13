@@ -19,7 +19,6 @@ import { aiInsightsEngine } from "./lib/aiInsights";
 import { scoreAggregation } from "./lib/scoreAggregation";
 import { insertTripSchema, insertIncidentSchema } from "@shared/schema";
 import { z } from "zod";
-import { authService } from "./auth";
 import { webauthnService } from "./webauthn";
 import { authLimiter, tripDataLimiter, webhookLimiter, coachLimiter } from "./middleware/security";
 import { gdprDeleteLimiter, poolModificationLimiter } from "./middleware/rateLimiter";
@@ -118,31 +117,6 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error: unknown) {
       console.error("PATCH /api/profile/me error:", error);
       res.status(500).json({ message: "Error updating profile" });
-    }
-  });
-
-  // Auth endpoints with rate limiting
-  app.post("/api/auth/login", authLimiter, async (req, res) => {
-    try {
-      const { username, password } = req.body;
-      
-      if (!username || !password) {
-        return res.status(400).json({ message: "Username and password required" });
-      }
-
-      const user = await authService.login(username, password);
-      
-      if (!user) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-
-      // Return user data without password
-      const { password: _, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
-    } catch (error: any) {
-      console.error("Login error:", error);
-      // Do not leak internal error details to the client
-      res.status(500).json({ message: "Login failed" });
     }
   });
 

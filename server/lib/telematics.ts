@@ -3,6 +3,7 @@ import {
   tripDistanceMeters,
   tripDurationSeconds,
 } from '../../shared/tripProcessor.js';
+import { calculateRefundCents } from '../../shared/refundCalculator.js';
 
 export interface TelematicsData {
   gpsPoints: GPSPoint[];
@@ -207,40 +208,12 @@ export class TelematicsProcessor {
   }
 
   /**
-   * Calculate refund projection with corrected business logic
-   * Only drivers with personal score >= 70 are eligible
+   * Calculate refund projection — delegates to shared/refundCalculator.ts
    */
   calculateRefund(personalScore: number, poolSafetyFactor: number, premiumAmount: number): number {
-    // Eligibility check: Only drivers with personal score >= 70 qualify
-    if (personalScore < 70) {
-      return 0;
-    }
-
-    // Community average score is 75 as per documentation
     const communityScore = 75;
-
-    // Weighting: 80% personal, 20% community (per documentation)
-    const weightedScore = (personalScore * 0.8) + (communityScore * 0.2);
-
-    // Base refund calculation: 5% at 70 score, scaling to 15% at 100 score
-    const minRefundRate = 0.05; // 5% minimum refund at 70+ score
-    const maxRefundRate = 0.15; // 15% maximum refund at 100 score
-    const scoreRange = 100 - 70; // 30 point scoring range
-    const scoreAboveMin = Math.max(0, weightedScore - 70);
-
-    // Linear interpolation between min and max refund rates
-    const refundRate = minRefundRate + ((maxRefundRate - minRefundRate) * (scoreAboveMin / scoreRange));
-    
-    // Calculate base refund amount
-    const baseRefund = premiumAmount * Math.min(refundRate, maxRefundRate);
-
-    // Apply pool safety factor adjustment (typically 0.8-1.0)
-    const adjustedRefund = baseRefund * poolSafetyFactor;
-
-    // Ensure refund doesn't exceed maximum possible
-    const finalRefund = Math.min(adjustedRefund, premiumAmount * maxRefundRate);
-
-    return Math.round(Math.max(0, finalRefund) * 100); // integer cents
+    const premiumCents = Math.round(premiumAmount * 100);
+    return calculateRefundCents(personalScore, communityScore, premiumCents, poolSafetyFactor, premiumCents);
   }
 
   /**
@@ -650,4 +623,60 @@ export class TelematicsProcessor {
   }
 }
 
-export const telematicsProcessor = new TelematicsProcessor();
+// ---------------------------------------------------------------------------
+// Worker-backed processTrip — offloads CPU-intensive scoring to a worker thread.
+// Falls back to main-thread processing if the worker isn't available.
+// ---------------------------------------------------------------------------
+
+import { Worker } from 'node:worker_threads';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+class WorkerBackedProcessor extends TelematicsProcessor {
+  private worker: Worker | null = null;
+  private pending = new Map<number, { resolve: (v: any) => void; reject: (e: any) => void }>();
+  private nextId = 0;
+
+  private getWorker(): Worker | null {
+    if (this.worker) return this.worker;
+    try {
+      this.worker = new Worker(join(__dirname, 'telematics-worker.js'));
+      this.worker.on('message', (msg) => {
+        const p = this.pending.get(msg.id);
+        if (!p) return;
+        this.pending.delete(msg.id);
+        if (msg.error) p.reject(new Error(msg.error));
+        else p.resolve(msg.result);
+      });
+      this.worker.on('error', () => { this.worker = null; });
+      this.worker.on('exit', () => { this.worker = null; });
+      return this.worker;
+    } catch {
+      return null;
+    }
+  }
+
+  override async processTrip(
+    telematicsData: TelematicsData | TripJSON,
+    userId: number,
+    existingTrips?: Array<{ startTime: Date; endTime: Date; distance: number }>,
+    phonePickupCount?: number,
+  ): Promise<DrivingMetrics> {
+    const worker = this.getWorker();
+    if (!worker) {
+      // Fallback to main-thread processing
+      return super.processTrip(telematicsData, userId, existingTrips, phonePickupCount);
+    }
+
+    const id = this.nextId++;
+    return new Promise((resolve, reject) => {
+      this.pending.set(id, { resolve, reject });
+      worker.postMessage({ id, telematicsData, userId, existingTrips, phonePickupCount });
+    });
+  }
+}
+
+export const telematicsProcessor = new WorkerBackedProcessor();

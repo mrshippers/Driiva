@@ -25,8 +25,8 @@ import type {
   AuthenticationResponseJSON,
 } from '@simplewebauthn/server';
 import { db } from './db';
-import { users, webauthnCredentials, type WebauthnCredential } from '@shared/schema';
-import { eq, and } from 'drizzle-orm';
+import { users, webauthnCredentials, webauthnChallenges, type WebauthnCredential } from '@shared/schema';
+import { eq, and, lt } from 'drizzle-orm';
 import { getFirebaseAdmin } from './lib/firebase-admin';
 
 // ---------------------------------------------------------------------------
@@ -39,46 +39,40 @@ const ORIGIN = process.env.WEBAUTHN_ORIGIN ?? 'http://localhost:5000';
 const CHALLENGE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 // ---------------------------------------------------------------------------
-// TTL challenge store — replaces plain Map to prevent leaks on abandoned flows
+// DB-backed challenge store — persists across server restarts
 // ---------------------------------------------------------------------------
 
-interface ChallengeEntry {
-  challenge: string;
-  expiresAt: number;
-}
+const challengeStore = {
+  async set(key: string, challenge: string): Promise<void> {
+    const expiresAt = new Date(Date.now() + CHALLENGE_TTL_MS);
+    await db
+      .insert(webauthnChallenges)
+      .values({ key, challenge, expiresAt })
+      .onConflictDoUpdate({
+        target: webauthnChallenges.key,
+        set: { challenge, expiresAt },
+      });
+    // Sweep expired entries opportunistically
+    await db.delete(webauthnChallenges).where(lt(webauthnChallenges.expiresAt, new Date()));
+  },
 
-class TtlChallengeStore {
-  private store = new Map<string, ChallengeEntry>();
-
-  set(key: string, challenge: string): void {
-    this.store.set(key, { challenge, expiresAt: Date.now() + CHALLENGE_TTL_MS });
-    this.sweep();
-  }
-
-  get(key: string): string | undefined {
-    const entry = this.store.get(key);
-    if (!entry) return undefined;
-    if (Date.now() > entry.expiresAt) {
-      this.store.delete(key);
+  async get(key: string): Promise<string | undefined> {
+    const [row] = await db
+      .select()
+      .from(webauthnChallenges)
+      .where(eq(webauthnChallenges.key, key));
+    if (!row) return undefined;
+    if (new Date() > row.expiresAt) {
+      await db.delete(webauthnChallenges).where(eq(webauthnChallenges.key, key));
       return undefined;
     }
-    return entry.challenge;
-  }
+    return row.challenge;
+  },
 
-  delete(key: string): void {
-    this.store.delete(key);
-  }
-
-  /** Remove expired entries — called on every set() to keep memory bounded. */
-  private sweep(): void {
-    const now = Date.now();
-    for (const [key, entry] of Array.from(this.store)) {
-      if (now > entry.expiresAt) this.store.delete(key);
-    }
-  }
-}
-
-const challengeStore = new TtlChallengeStore();
+  async delete(key: string): Promise<void> {
+    await db.delete(webauthnChallenges).where(eq(webauthnChallenges.key, key));
+  },
+};
 
 // ---------------------------------------------------------------------------
 // Service interface
@@ -138,7 +132,7 @@ export class SimpleWebAuthnService implements WebAuthnService {
     };
 
     const options = await generateRegistrationOptions(opts);
-    challengeStore.set(`reg_${email}`, options.challenge);
+    await challengeStore.set(`reg_${email}`, options.challenge);
     return options;
   }
 
@@ -147,7 +141,7 @@ export class SimpleWebAuthnService implements WebAuthnService {
     response: RegistrationResponseJSON,
     userAgent?: string,
   ): Promise<{ verified: boolean; error?: string }> {
-    const expectedChallenge = challengeStore.get(`reg_${email}`);
+    const expectedChallenge = await challengeStore.get(`reg_${email}`);
     if (!expectedChallenge) {
       return { verified: false, error: 'Registration challenge expired or not found' };
     }
@@ -179,7 +173,7 @@ export class SimpleWebAuthnService implements WebAuthnService {
           isActive: true,
         });
 
-        challengeStore.delete(`reg_${email}`);
+        await challengeStore.delete(`reg_${email}`);
         return { verified: true };
       }
 
@@ -217,7 +211,7 @@ export class SimpleWebAuthnService implements WebAuthnService {
     };
 
     const options = await generateAuthenticationOptions(opts);
-    challengeStore.set(`auth_${email}`, options.challenge);
+    await challengeStore.set(`auth_${email}`, options.challenge);
     return options;
   }
 
@@ -225,7 +219,7 @@ export class SimpleWebAuthnService implements WebAuthnService {
     email: string,
     response: AuthenticationResponseJSON,
   ): Promise<{ verified: boolean; user?: any; customToken?: string; error?: string }> {
-    const expectedChallenge = challengeStore.get(`auth_${email}`);
+    const expectedChallenge = await challengeStore.get(`auth_${email}`);
     if (!expectedChallenge) {
       return { verified: false, error: 'Authentication challenge expired or not found' };
     }
@@ -269,7 +263,7 @@ export class SimpleWebAuthnService implements WebAuthnService {
           })
           .where(eq(webauthnCredentials.id, credential.id));
 
-        challengeStore.delete(`auth_${email}`);
+        await challengeStore.delete(`auth_${email}`);
 
         // Issue a Firebase custom token so the client can call signInWithCustomToken().
         // This bridges WebAuthn auth into the Firebase session system without breaking

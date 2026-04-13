@@ -162,6 +162,12 @@ export const webauthnCredentials = pgTable("webauthn_credentials", {
   lastUsed: timestamp("last_used"),
 });
 
+export const webauthnChallenges = pgTable("webauthn_challenges", {
+  key: text("key").primaryKey(),
+  challenge: text("challenge").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   drivingProfile: one(drivingProfiles, {
