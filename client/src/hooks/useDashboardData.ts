@@ -14,6 +14,7 @@ import { useUserProfile } from './useUserProfile';
 import { useRecentTrips } from './useRecentTrips';
 import { useActivePolicy } from './useActivePolicy';
 import { usePoolState } from './usePoolState';
+import { projectedRefundCents } from '../../../shared/refundCalculator';
 import {
   TripDocument,
   RecentTripSummary,
@@ -148,12 +149,7 @@ function truncateAddress(address: string | null): string {
 }
 
 function calculateProjectedRefund(score: number, premiumCents: number): number {
-  if (score < 70) return 0;
-  const scoreRange = Math.max(0, score - 70);
-  const baseRefund = 5;
-  const additionalRefund = (scoreRange / 30) * 10;
-  const totalPercentage = Math.min(baseRefund + additionalRefund, 15);
-  return Math.round((totalPercentage / 100) * (premiumCents / 100));
+  return projectedRefundCents(score, premiumCents);
 }
 
 function parseMemberSince(rawCreatedAt: unknown): string | null {

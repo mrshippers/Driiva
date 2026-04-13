@@ -27,6 +27,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import MapLoader from '../components/MapLoader';
 import { useDashboardData, DashboardData } from '@/hooks/useDashboardData';
 import { useCommunityData } from '@/hooks/useCommunityData';
+import { projectedRefundCents } from '../../../shared/refundCalculator';
 import { useBetaEstimate } from '@/hooks/useBetaEstimate';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useToast } from '@/hooks/use-toast';
@@ -175,13 +176,8 @@ function getAiDriivaTip(score: number): typeof AI_DRIIVA_TIPS[0] {
   return AI_DRIIVA_TIPS[idx];
 }
 
-function calculateSurplus(score: number, premium: number): number {
-  if (score < 70) return 0;
-  const scoreRange = Math.max(0, score - 70);
-  const baseRefund = 5;
-  const additionalRefund = (scoreRange / 30) * 10;
-  const totalPercentage = Math.min(baseRefund + additionalRefund, 15);
-  return Math.round((totalPercentage / 100) * premium);
+function calculateSurplus(score: number, premiumPounds: number): number {
+  return projectedRefundCents(score, Math.round(premiumPounds * 100));
 }
 
 // ============================================================================

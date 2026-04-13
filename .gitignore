@@ -25,3 +25,15 @@ firestore-backup/
 # Firebase CLI
 firebase-debug.log
 firebase-debug.*.log
+
+# Repo bloat — assets, archives, experimental
+attached_assets/
+*.zip
+coverage/
+claude-sentinel/
+Driiva Marketing/
+
+# Markdown code dumps (not documentation)
+ANTIGRAVITY_AGENTS_DRIIVA.md
+DRIVING_BEHAVIOR_PROCESSING.md
+RUNBOOK.md

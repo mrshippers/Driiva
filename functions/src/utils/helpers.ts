@@ -7,6 +7,7 @@
 import * as admin from 'firebase-admin';
 import { TripLocation } from '../types';
 import { haversineMeters } from '../shared/tripProcessor';
+import { calculateRefundCents } from '../shared/refundCalculator';
 
 /**
  * Get current pool period string (e.g., "2026-02")
@@ -197,8 +198,7 @@ export function calculateRiskTier(score: number): 'low' | 'medium' | 'high' {
 
 /**
  * Calculate projected refund based on score and contribution.
- * @deprecated Use shared/refundCalculator.ts::calculateRefundCents for new code.
- * Kept for backward compatibility — delegates to the canonical formula.
+ * Delegates to shared/refundCalculator.ts — the single source of truth.
  */
 export function calculateProjectedRefund(
   score: number,
@@ -206,11 +206,8 @@ export function calculateProjectedRefund(
   safetyFactor: number,
   _refundRate: number
 ): number {
-  // Canonical formula: blended score → refund rate 5-15% → apply safety factor
-  const clamped = Math.max(50, Math.min(100, score));
-  const rate = 0.05 + ((clamped - 50) / 50) * 0.10;
-  const rawRefund = contributionCents * rate * safetyFactor;
-  return Math.round(rawRefund);
+  const communityScore = 75;
+  return calculateRefundCents(score, communityScore, contributionCents, safetyFactor, contributionCents);
 }
 
 // ============================================================================
