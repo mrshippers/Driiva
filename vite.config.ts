@@ -24,18 +24,13 @@ export default defineConfig({
     chunkSizeWarningLimit: 500,
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Firebase SDKs are large — split them out so the main bundle stays lean
-          firebase: [
-            "firebase/app",
-            "firebase/auth",
-            "firebase/firestore",
-            "firebase/functions",
-            "firebase/performance",
-            "firebase/analytics",
-          ],
-          // React core
-          vendor: ["react", "react-dom"],
+        manualChunks(id) {
+          if (id.includes("node_modules/firebase/") || id.includes("node_modules/@firebase/")) {
+            return "firebase";
+          }
+          if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) {
+            return "vendor";
+          }
         },
       },
     },
