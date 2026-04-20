@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
 
 /* iOS Safe Area Support */
 @supports (padding: env(safe-area-inset-top)) {
