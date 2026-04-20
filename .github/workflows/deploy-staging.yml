@@ -72,7 +72,7 @@ jobs:
 
       # Upload built functions so the deploy job doesn't need to rebuild
       - name: Upload functions build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: functions-dist
           path: functions/lib/
