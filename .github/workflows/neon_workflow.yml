@@ -26,7 +26,7 @@ jobs:
           api_key: ${{ secrets.NEON_API_KEY }}
 
       - name: Post branch URL as PR comment
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             github.rest.issues.createComment({
