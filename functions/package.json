@@ -26,7 +26,7 @@
     "@driiva/contracts": "file:vendor/contracts",
     "@neondatabase/serverless": "^0.10.4",
     "@sentry/node": "^10.70.0",
-    "firebase-admin": "^12.0.0",
+    "firebase-admin": "^14.3.0",
     "firebase-functions": "^5.0.0",
     "node-fetch": "^2.7.0",
     "ws": "^8.18.3",
