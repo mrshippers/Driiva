@@ -39,6 +39,7 @@ import { ControlButtons } from '@/components/tripRecording/ControlButtons';
 import { SensorErrorPanel } from '@/components/tripRecording/SensorErrorPanel';
 import { DemoModeNotice } from '@/components/tripRecording/DemoModeNotice';
 import { useWakeLock } from '@/hooks/useWakeLock';
+import { useTripPhonePickups } from '@/hooks/useTripPhonePickups';
 import { useTripDurationTicker } from '@/hooks/useTripDurationTicker';
 // ============================================================================
 // COMPONENT
@@ -95,9 +96,9 @@ export default function TripRecording() {
           avgSpeed: point.speed ?? prev.avgSpeed,
         }));
 
-        // Detect driving events (simplified - production would be more sophisticated)
-        // No phone-pickup detection on this surface, so the count stays 0.
-        // Phone usage is 10% of the score. See ROADMAP.md TD-2.
+        // Detect driving events (simplified - production would be more sophisticated).
+        // Phone pickups are not derivable from a GPS fix. They come from the
+        // accelerometer and the tab switch, both counted by useTripPhonePickups.
         if (point.speed !== null) {
           const speedMph = point.speed * 2.237;
           if (speedMph > 75) {
@@ -129,22 +130,20 @@ export default function TripRecording() {
   // Wake Lock: keep the screen on while recording so GPS doesn't stop
   const { acquireWakeLock, releaseWakeLock } = useWakeLock();
 
-  // Track phone pickups + re-acquire wake lock on visibility changes
+  // Re-acquire the wake lock when the tab returns, since the browser released
+  // it on hide. Pickups hang off this event too, in useTripPhonePickups.
   useEffect(() => {
     const handler = async () => {
-      if (recordingState === 'recording') {
-        if (document.visibilityState === 'hidden') {
-          // Driver switched away — count as a phone pickup
-          setTripEvents(prev => ({ ...prev, phonePickupCount: prev.phonePickupCount + 1 }));
-        } else {
-          // Tab visible again — re-acquire wake lock (browser releases it on hide)
-          await acquireWakeLock();
-        }
+      if (recordingState === 'recording' && document.visibilityState !== 'hidden') {
+        await acquireWakeLock();
       }
     };
     document.addEventListener('visibilitychange', handler);
     return () => document.removeEventListener('visibilitychange', handler);
   }, [recordingState, acquireWakeLock]);
+
+  // Phone pickups: accelerometer plus tab switches, counted while recording.
+  const phonePickups = useTripPhonePickups(recordingState, setTripEvents);
 
   // Get user ID (handle demo mode)
   const getUserId = useCallback((): string => {
@@ -257,6 +256,10 @@ export default function TripRecording() {
           phonePickupCount: 0,
         });
 
+        // After the event reset above, so its first count is not clobbered by
+        // it. With no motion sensor the visibility proxy carries it alone.
+        phonePickups.start();
+
         setRecordingState('recording');
         await acquireWakeLock();
 
@@ -308,6 +311,11 @@ export default function TripRecording() {
       // Stop telematics
       const telematicsData = await telematics.stopCollection();
 
+      // The count the detector returns is authoritative, not the one in
+      // tripEvents: React batches state updates, so a pickup counted in the
+      // same tick as the stop may not have reached state yet.
+      const phonePickupCount = phonePickups.stop();
+
       // Stop point streamer and get final count
       let finalPointsCount = points.length;
       if (streamerRef.current) {
@@ -328,7 +336,7 @@ export default function TripRecording() {
                 finalPosition?.latitude ?? 0,
                 finalPosition?.longitude ?? 0
               ),
-              events: tripEvents,
+              events: { ...tripEvents, phonePickupCount },
               distanceMeters: tripStats.distanceMeters,
             },
             finalPointsCount
@@ -381,6 +389,8 @@ export default function TripRecording() {
       await streamerRef.current.stop();
       streamerRef.current = null;
     }
+
+    phonePickups.stop();
 
     // Mark trip as cancelled in Firestore
     if (activeTrip && isFirebaseConfigured) {

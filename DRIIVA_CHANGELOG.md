@@ -5,6 +5,80 @@
 
 ## Entries
 
+### 2026-09-08 - The web recorder only noticed phone usage when the driver left the tab
+
+`nightly/2026-09-08`. Closes ROADMAP's TD-2 under "Tech debt lifted out of code comments".
+
+- **What the ticket got right and wrong** - it said the web trip recorder "sets the pickup count
+  without an accelerometer reading behind it", and it was lifted verbatim from a comment in
+  `client/src/pages/trip-recording.tsx` claiming the count "stays 0". That comment had been wrong
+  since the `visibilitychange` proxy landed underneath it: the page did count pickups, and
+  `packages/scoring/src/tripMetrics.ts` has named that proxy as the web's definition of a pickup
+  since M2-DEC-1. So nothing was fabricated. The accelerometer half of the complaint was real, and
+  it is the half that matters: `visibilitychange` only fires when the driver leaves the tab, so a
+  driver who lifted the phone, read the recording screen and put it back registered nothing at all
+  against a score component named after exactly that act, worth 10%.
+- **Fix** - `client/src/lib/phonePickup.ts` is a browser-side heuristic on the `devicemotion` stream
+  the page already collects and already discloses, running beside the existing proxy for the length
+  of the trip. Both signals feed ONE counter with one debounce, so lifting the phone and then
+  switching app is one pickup rather than two. It mirrors mobile's shape (threshold, sustain window,
+  debounce) and deliberately breaks the mirror in the two places the surfaces genuinely differ.
+  Units: expo-sensors reports g and rests at 1g, DeviceMotion reports m/s^2 from two streams that
+  rest at different values, so the deviation is taken from whichever stream the browser populates,
+  Android commonly giving only the gravity-inclusive one. Sample rate: mobile samples at 5 Hz and
+  ends an episode on a single quiet sample, browsers sample fast enough to resolve the oscillation
+  inside a real pickup, so that rule would have ended almost every episode before it could be
+  counted. A below-threshold run shorter than 200ms no longer breaks the episode, and the same
+  tolerance stops a gap in the event stream itself, which is what a backgrounded page produces,
+  reading as minutes of continuous handling.
+- **Counting stops when the trip is paused**, which is what the proxy alone used to do by sitting
+  behind a `recordingState === 'recording'` check. A paused trip accumulates no duration, and the
+  phone-usage score is a rate over duration, so handling the phone during a pause would have been
+  charged against time that was never measured. The gate is `shouldCount` on the detector, so it
+  covers the accelerometer as well as the tab switch.
+- **What is deliberately not claimed** - `sawMotionReading` records whether any usable reading ever
+  arrived, so a desktop with no motion sensor stays distinguishable from a phone that measured no
+  handling, and it is set even while counting is paused because sensor presence is true either way.
+  Nothing invents a reading and no UI claims the sensor confirmed anything. The count is still
+  client-reported, and still sanitised and rate-capped server-side by `sanitizePhonePickupCount`
+  before it can move a score. Like its mobile counterpart the thresholds are reasoned rather than
+  calibrated: UNVERIFIED against a real accelerometer in a moving car.
+- **One correctness fix carried along** - `handleStopTrip` submitted `tripEvents` read out of a
+  state closure. It now submits the count `stop()` returns, because React batches state updates and
+  a pickup counted in the same tick as the stop could otherwise be dropped.
+- **Kept under the ceiling** - the wiring pushed `trip-recording.tsx` to 524 lines, so it moved into
+  `client/src/hooks/useTripPhonePickups.ts` following the `useTripDurationTicker` precedent from the
+  same page. The page is back to 499. The page's `visibilitychange` handler now does one job,
+  re-acquiring the wake lock, and the hook keeps its own listener for the pickup half.
+- **Held by** `client/src/__tests__/phone-pickup-detector.test.ts` (25 tests on the rule) and
+  `client/src/__tests__/trip-recording-phone-pickup.test.tsx` (7 tests on the wiring, which is the
+  half that failed silently on mobile for six days in `cd35366`, where the detector existed and no
+  app code ever called it). The scoring package's per-platform note, and its build-time copy in
+  `functions/src/scoring/tripMetrics.ts`, were corrected in step so the two do not drift.
+
+**Tests:** both new files red first for the right reason, then green. Six planted violations checked
+afterwards, each failing only the law it breaks: mobile's reset-on-one-quiet-sample rule fails the
+oscillation test, dropping the stream-gap guard fails the throttled-page test, an unshared debounce
+fails the count-one-act-once test, removing the pause gate fails the paused-trip test, and building
+the detector without starting it, the `cd35366` bug replanted, fails 3 of the 7 wiring tests both
+before and after the hook extraction. Full suite 105 files, 1197 passing, 1 skipped, 3 todo. Root
+`tsc --noEmit` at its 6 known pre-existing `firebase-admin` errors, byte-identical error set before
+and after by diff, none in any file touched here. `npm run build` exit 0.
+
+`npm run gates` ran for real three times, since Chrome was up on 9222 and both Doppler and the
+Firebase CLI resolve in this clone. First and third runs all green: DESIGN LAWS on 5 of 5 routes,
+AXE 0 serious or critical across 14 of 14. The second run failed law 5 on `/leaderboard` with "NO
+PROSE FOUND", which is the gate refusing to call an empty measurement green rather than a violation:
+that route rendered nothing at all that time, having measured 5 prose nodes and 63 figures on the
+run before and after. `/leaderboard` is not on any path this change touches, and the flake is logged
+as its own ROADMAP line rather than smoothed over here.
+
+Two things are broken in this clone and neither is from this change, both proved rather than
+assumed: `eslint` cannot start at all, since typescript-eslint refuses TS 7.0, which fails
+identically on an untouched file; and the `functions` build cannot resolve `@driiva/contracts`,
+verified by running it with and without this change and diffing the error sets, identical at 6.
+
+---
 ### 2026-09-06 - The client speaks one palette, not a canonical one plus thirty aliases for it
 
 `nightly/2026-09-06`. Closes ROADMAP's "Client SPA token alignment" ticket under "Remaining features

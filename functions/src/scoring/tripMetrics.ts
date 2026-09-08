@@ -108,10 +108,13 @@ const calculateDistance = haversineMeters;
  * file header).
  *
  * `clientReportedPhonePickupCount` is the client's own count of phone
- * pickups during the trip (web: visibilitychange while recording; mobile: an
- * on-device accelerometer heuristic - see the call sites in
+ * pickups during the trip. Both clients now count it from an on-device
+ * accelerometer heuristic (mobile/lib/phonePickup.ts, client/src/lib/
+ * phonePickup.ts); the web surface additionally counts a tab switch, because
+ * browsers stop delivering devicemotion to a page that is not visible, and
+ * debounces the two together so one act is one pickup. See the call sites in
  * functions/src/triggers/trips.ts and each client for what "pickup" means on
- * that platform). It is sanitised via `sanitizePhonePickupCount` before it
+ * that platform. It is sanitised via `sanitizePhonePickupCount` before it
  * can influence `events.phonePickupCount` or the score, because it is client
  * input the server has no independent way to verify.
  */
