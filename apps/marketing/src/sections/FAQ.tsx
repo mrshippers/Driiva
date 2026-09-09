@@ -5,7 +5,20 @@ interface Q {
   a: string;
 }
 
-const QS: readonly Q[] = [
+/**
+ * The single source for the FAQ, rendered here and serialised into the
+ * FAQPage JSON-LD by scripts/prerender.mjs.
+ *
+ * These answers used to exist twice: here, and hand-typed into a
+ * <script type="application/ld+json"> block in index.html. The two drifted.
+ * The visible answer gave the agreed position, that we are only working
+ * towards the sandbox and are not authorised. The schema, which is the copy a
+ * search engine reads, asserted a submitted application awaiting a decision.
+ * Nothing has been submitted. That was a false regulatory claim served to
+ * search engines for as long as the two copies were maintained separately.
+ * Now there is one copy, and it is this one.
+ */
+export const QS: readonly Q[] = [
   {
     q: 'Will this really be cheaper than my current insurance?',
     a: "That is the intention, and we are not going to put a number on it before we have priced a single real policy. The model rewards safe driving and charges aggressive driving accordingly, so if you drive hard, we are deliberately not for you.",
