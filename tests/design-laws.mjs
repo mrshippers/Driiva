@@ -100,7 +100,12 @@ import { CHECKS } from './design/checks.mjs';
  * page four times.
  */
 async function measure(client, route, { plant = false } = {}) {
-  await settle(client);
+  // A page that never came to rest is not a page that passed. This used to be
+  // a bare `await settle(client)` whose timeout was indistinguishable from
+  // success, and the laws then ran on whatever happened to be on screen.
+  if (!(await settle(client))) {
+    throw new Error('never settled: still loading when the laws were due to run');
+  }
 
   const rendered = await evaluate(
     client,

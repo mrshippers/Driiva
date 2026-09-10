@@ -6,10 +6,18 @@ import gradientBackground from '@/assets/gradient-background.png';
  * Full-screen branded loader shown while auth state is resolving or lazy
  * pages are loading. Uses the same dark gradient + logo treatment as
  * SplashScreen to prevent any white flash during hydration.
+ *
+ * `data-app-loading` is how this screen tells the visual gates it is up. They
+ * knew about skeleton bars and not about this, so a route still loading behind
+ * this loader could be measured as though it had rendered: see BUSY_SELECTOR in
+ * tests/qa-session.mjs. Keep the attribute if this markup is reworked.
  */
 export default function BrandedLoader() {
   return (
-    <div className="fixed inset-0 z-[9998] flex items-center justify-center">
+    <div
+      data-app-loading
+      className="fixed inset-0 z-[9998] flex items-center justify-center"
+    >
       {/* Background gradient */}
       <div
         className="absolute inset-0"

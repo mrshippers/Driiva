@@ -222,13 +222,20 @@ a plain reference to it instead of a marker.
 
 - [ ] **TD-1 Admin monitoring reads no real metrics.** `client/src/pages/admin/monitoring.tsx` renders `avgLatencyMs`, `functionsInvocations`, `firestoreReads` and `firestoreWrites` as hardcoded zeros. The latency figure needs parsing out of the `[metric] trip_pipeline` log lines that already exist; the other three need the Cloud Monitoring API, which needs the API enabled and a service account with `monitoring.viewer`. Until then the page shows four zeros that look like measurements and are not.
 - [x] **TD-2 The web trip recorder has no phone-pickup detection.** - *done: `nightly/2026-09-08`. Half the premise was stale. The recorder did have a signal, the `visibilitychange` proxy that `packages/scoring/src/tripMetrics.ts` has named as the web's definition of a pickup since M2-DEC-1; the code comment this ticket was lifted from said the count "stays 0" and had been wrong since that proxy landed. What was genuinely missing is the thing the ticket named: an accelerometer. A driver who picked the phone up, read the recording screen and put it back was invisible to a component worth 10% of the score, because `visibilitychange` only fires on leaving the tab. `client/src/lib/phonePickup.ts` now runs a browser heuristic off `devicemotion` beside the proxy, and both feed ONE counter, so lifting the phone and then switching app is one pickup rather than two. It mirrors mobile's threshold, sustain window and debounce, and deliberately does not mirror its units or its sample-rate rule: DeviceMotion reports m/s^2 from two streams that rest at different values, and browsers sample fast enough to resolve the oscillation inside a real pickup, which mobile's reset-on-one-quiet-sample rule would read as no pickup at all. `sawMotionReading` keeps a sensorless desktop's zero distinguishable from a measured zero. Held by 22 unit tests on the heuristic and 6 page-level tests on the wiring, the half that failed silently on mobile for six days in `cd35366`.*
-- [ ] **The design-law gate intermittently measures an empty `/leaderboard`.** Observed on
-  `nightly/2026-09-08`: three consecutive `npm run gates` runs on the same commit, the middle one
-  failing law 5 with "NO PROSE FOUND" on that route while the runs either side measured 5 prose
-  nodes and 63 figures there. The gate is behaving correctly, refusing to call a measurement of
-  nothing green; the route is rendering empty some of the time, most likely measured before its data
-  arrives. Not investigated, and not caused by anything in that night's diff, which never touches
-  `/leaderboard`. Worth pinning before a red run gets read as a real violation, or worse, ignored.
+- [x] **The design-law gate intermittently measures an empty `/leaderboard`.** - *done:
+  `nightly/2026-09-10`. Reproduced on the first run of the night, then caught by logging every
+  sample `settle` took: `1:926:26:1:sk0`, which was `BrandedLoader` filling the screen with the only
+  text on the page coming from the nav underneath it. The route was not "rendering empty", as this
+  ticket guessed; it had not rendered at all yet, and the gate measured it anyway. `settle` asks two
+  questions and both gave the wrong answer there - there IS text, 26 characters of nav labels, and
+  there are NO skeletons, because `BrandedLoader` draws a pulsing logo rather than skeleton bars.
+  Every nav label is shorter than the 12 characters law 5 counts as prose, so law 5 reported a
+  type-floor violation on a page it had never seen. `BrandedLoader` now carries `data-app-loading`
+  and `settle` counts it, which covers every surface that loader serves (the Suspense fallback and
+  all five `ProtectedRoute` gates), not just `/leaderboard`. `settle` also returns whether it
+  settled instead of returning the same nothing on success and on a 20s timeout, and all three gates
+  now report a page that never settled as NOT REACHED rather than measuring it. Held by
+  `tests/unit/qa-settle-busy.test.tsx`.*
 
 - [ ] **TD-3 Seven Cloud Functions callables have no rate limiting.** `functions/src/http/admin.ts` (initializePool, cancelTrip, contribute), `classifier.ts` (classifyTrip, batch job) and `gdpr.ts` (export, delete). Needs a decision on the limits and on where the counters live, since the Express `rateLimiter` middleware does not reach a callable.
 - [ ] **TD-4 ZAR-vs-GBP conversion is an identity pass-through.** `functions/src/http/rootAdapter.ts` `resolveCurrency` returns its input unchanged: Root's sandbox models money in ZAR cents, Driiva is a GBP product, and no conversion is applied anywhere. Deliberately not guessed. Closes on either Root's UK/GBP product module key (needs sandbox credentials) or an FX rate signed off under D15. See `docs/rebuild/m4-grounding.md` sections 2 and 4.
