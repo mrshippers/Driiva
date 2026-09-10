@@ -5,6 +5,63 @@
 
 ## Entries
 
+### 2026-09-10 - The gate was judging /leaderboard before the page had rendered at all
+
+`nightly/2026-09-10`. Closes ROADMAP's "The design-law gate intermittently measures an empty
+`/leaderboard`" under "Tech debt lifted out of code comments".
+
+- **Reproduced, then measured.** The first `npm run gates` of the night failed law 5 on
+  `/leaderboard` with "NO PROSE FOUND", the same one-run-in-three flake the ticket describes. Five
+  runs after that were green, so rather than chase it, every sample `settle` takes was logged for a
+  whole run. The frame that matters is `1:926:26:1:sk0`, and dumping the page at that moment gives
+  `{ text: "Home\nTrips\nRewards\nProfile", loader: true }`: `BrandedLoader` filling the screen,
+  with the only text on the page coming from the nav underneath it.
+- **What the ticket got wrong, and it is the useful half.** It assumed the route "is rendering empty
+  some of the time". It is not. The route had not rendered at all yet, and the gate measured it
+  anyway. That is the difference between a product bug and a gate bug, and it is a gate bug.
+- **Why `settle` let it through.** It asks two questions and both gave the wrong answer on that
+  frame. Is there text? Yes, 26 characters of nav labels. Are there skeletons? No, because
+  `BrandedLoader` draws a pulsing logo, not skeleton bars, and the skeleton selector was the only
+  loading state the gate knew about. Three such samples in a row, 750ms, and the laws run against a
+  blank screen. Every nav label is shorter than the 12 characters law 5 counts as prose, so law 5
+  reported a type-floor violation on a page it had never seen, and law 6 agreed there were "no
+  figures on this route" where a loaded `/leaderboard` has 63.
+- **Fix, at the shared function rather than at the route.** `BrandedLoader` now carries
+  `data-app-loading` and `settle` counts it as busy. That is one attribute and one selector entry,
+  and it covers every surface that loader serves - the Suspense fallback for all lazy routes and the
+  five `ProtectedRoute` gates - not just the route that happened to be caught. The selector is
+  exported as `BUSY_SELECTOR` so the gate and the app are held together by a test rather than by a
+  copied class name. Deliberately NOT fixed by waiting longer or by requiring a minimum text length:
+  a page is allowed to be terse, and both of those would have hidden the flake rather than closed it.
+- **The silent timeout, carried along because it is the same defect.** `settle` returned the same
+  nothing whether the page came to rest or it gave up after 20 seconds, so no caller could tell a
+  measurement from a timeout. It returns a boolean now and all three consumers check it: the design
+  laws, the axe audit and the marketing reduced-motion gate all record a page that never settled as
+  NOT REACHED, with the reason, instead of judging whatever is on screen. Without this, marking the
+  loader would have converted the flake into a 20s wait followed by the same wrong measurement.
+- **Held by** `tests/unit/qa-settle-busy.test.tsx` (9 tests). Two laws: every loading state the app
+  can show is busy to the gate, asserted by rendering the real `BrandedLoader` and the real
+  leaderboard skeletons through the real exported selector rather than grepping for a class name;
+  and `settle` reports whether it settled, driven through its real loop by a fake CDP client that
+  replays scripted samples, including the exact `926:26` frame from the failing run.
+
+**Tests:** red first, 8 of 9 failing for the right reasons, then green. Three planted violations,
+each failing only what it breaks: removing `data-app-loading` from `BrandedLoader` fails the loader
+law alone (1 of 9), removing `[data-app-loading]` from `BUSY_SELECTOR` fails the same one alone, and
+forcing `settle` to time out on every call turns the whole gate run into "DESIGN LAWS: INCOMPLETE,
+5 route(s) were never measured, so this is not a pass" plus 7 axe routes NOT REACHED, which is the
+reporting path this change adds. Full suite 108 files, 1212 passing, 2 skipped, 3 todo. `npm run
+build` exit 0. `tsc --noEmit` clean, and byte-identical before and after by diff.
+
+`npm run gates` ran for real nine times tonight, Chrome and the emulator both resolving in this
+clone. Once before the change, which is the run that went red on `/leaderboard` and gave us the
+reproduction; five more before the change, all green, which is what makes it a flake; and three
+after, all green, DESIGN LAWS on 5 of 5 routes and AXE 0 serious or critical across 14 of 14. The
+before-and-after evidence is one line rather than a pass rate: the identical frame, 926 elements and
+26 characters with the loader up, scored `sk0 empty=false` before this change and `sk1 empty=true`
+after it.
+
+---
 ### 2026-09-08 - The web recorder only noticed phone usage when the driver left the tab
 
 `nightly/2026-09-08`. Closes ROADMAP's TD-2 under "Tech debt lifted out of code comments".

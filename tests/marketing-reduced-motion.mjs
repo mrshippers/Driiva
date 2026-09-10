@@ -160,7 +160,9 @@ async function measure(url, preference, { plant = false } = {}) {
       features: [{ name: 'prefers-reduced-motion', value: preference }],
     });
     await client.send('Page.navigate', { url });
-    await settle(client);
+    if (!(await settle(client))) {
+      throw new Error(`never settled: ${url} was still loading when it was due to be measured`);
+    }
     if (plant) await evaluate(client, PLANT_STYLE, { awaitPromise: false });
     return JSON.parse(await evaluate(client, MEASURE, { awaitPromise: false }));
   } finally {
