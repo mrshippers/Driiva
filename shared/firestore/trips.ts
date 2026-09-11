@@ -105,6 +105,14 @@ export interface TripDocument {
   // this same shape). Optional: older trips and clients that predate this
   // never write it.
   clientReportedPhonePickupCount?: number;
+
+  // How long the finalisation pipeline took, in milliseconds, written by the
+  // server in the same update that sets `status` (ROADMAP TD-1). Optional: a
+  // trip finalised before this landed, or one that failed, carries no
+  // measurement rather than a zero. Only trustworthy on a trip the server
+  // finalised - see functions/src/schema/documents.ts for why `completed` is
+  // the boundary.
+  pipelineLatencyMs?: number;
 }
 
 /**
