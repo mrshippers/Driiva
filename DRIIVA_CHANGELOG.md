@@ -5,6 +5,38 @@
 
 ## Entries
 
+### 2026-09-12 - Community pool calculation ticket was already done, just never ticked
+
+`nightly/2026-09-12`. Closes ROADMAP's "Community pool calculation using aggregated
+drivingProfile data" under "Damoov & Feedback".
+
+- **Checked the ticket's own symptom before touching anything.** The only other unblocked,
+  untaken tickets tonight were the Stripe checkout for premium payments, the premium amount
+  display on the policy page, and splitting `server/routes.ts` - all three already exist in the
+  code (`client/src/pages/checkout.tsx` + `create-subscription`/`create-checkout` in
+  `paymentRoutes.ts`, `policy.tsx` line 154, and `server/routes.ts` is 43 lines that only wire up
+  six already-split `server/http/*` modules). This one was the same shape: real, done, never
+  ticked.
+- **What actually does the calculation.** `functions/src/triggers/driverProfile.ts` rolls each
+  finished trip into the driver's `drivingProfile.currentScore` as a weighted average inside a
+  Firestore transaction, then `calculateRiskTier(newScore)` turns that aggregated score into a
+  risk tier on the same write. `functions/src/scheduled/pool.ts` finalises the monthly pool
+  period off the resulting `PoolShareDocument`s. Nothing here is a stub or a TODO - it is the same
+  code path `finalizePoolPeriod` and the pool trigger tests already exercise.
+- **No code changed.** Confirmed with `functions/src/__tests__/scheduled/pool.test.ts` and
+  `functions/src/__tests__/triggers`, 4 files, 55 passing, before ticking the box.
+- **Left `Rewards eligibility logic (Tesco/Halfords/Nectar thresholds based on
+  overallSafetyScore)` unchecked rather than closing it under the wrong shape.** The shipped
+  rewards system (`RewardsTimeline`, "Make It Polished") is day/milestone-based, not a
+  score-threshold ladder - a different design, not an unfinished one. That is a product call, not
+  a coding gap, so it stays open with a note instead of being ticked against work that doesn't
+  match it.
+
+**Tests:** `npx vitest run functions/src/__tests__/scheduled/pool.test.ts
+functions/src/__tests__/triggers` - 4 files, 55 passing. No source files touched, so this is
+confirmation the claim holds, not a regression check. `npm run gates` not run: nothing outside
+`ROADMAP.md`/`DRIIVA_CHANGELOG.md` changed.
+
 ### 2026-09-10 - The gate was judging /leaderboard before the page had rendered at all
 
 `nightly/2026-09-10`. Closes ROADMAP's "The design-law gate intermittently measures an empty
