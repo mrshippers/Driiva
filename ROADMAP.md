@@ -115,8 +115,8 @@ Three waves merged through `feat/fable-algo` and `feat/fable-trip` into `feat/fa
 - [x] GDPR-compliant privacy/terms for telematics data - *done: Damoov named as Article 28 data processor; telematics consent clause; rewards framing (FCA-clean)*
 - [x] Firestore security rules for feedback + systemLogs - *done: authenticated create on feedback; admin SDK only on systemLogs*
 - [ ] XGBoost risk model wired to drivingProfile scores (next sprint)
-- [ ] Community pool calculation using aggregated drivingProfile data
-- [ ] Rewards eligibility logic (Tesco/Halfords/Nectar thresholds based on overallSafetyScore)
+- [x] Community pool calculation using aggregated drivingProfile data - *this was stale: `functions/src/triggers/driverProfile.ts` already rolls each finished trip into the driver's weighted `drivingProfile.currentScore` transactionally, `calculateRiskTier(newScore)` turns that into a risk tier on the same write, and `functions/src/scheduled/pool.ts` finalises the monthly pool period off the resulting `PoolShareDocument`s. Ticked 2026-09-12, no code changed - see `nightly/2026-09-12`.*
+- [ ] Rewards eligibility logic (Tesco/Halfords/Nectar thresholds based on overallSafetyScore) - superseded by a different design: the shipped rewards system (`RewardsTimeline`, done under "Make It Polished") is day/milestone-based (#Day5, #Day10, #Month3, #Anniversary), not a score-threshold ladder. Needs a product call on whether score-gated rewards are still wanted alongside it, not more code - left unchecked rather than closed under a design it doesn't match.
 
 ## Sprint: "Make It Real" (Week 1–2)
 
