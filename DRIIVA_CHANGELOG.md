@@ -5,6 +5,36 @@
 
 ## Entries
 
+### 2026-09-13 - The XGBoost ticket was asking for a model that had already been replaced
+
+`nightly/2026-09-13`. Closes ROADMAP's "XGBoost risk model wired to drivingProfile scores (next
+sprint)" under "Damoov & Feedback".
+
+- **Checked open PRs first.** `gh pr list` had #118 already fixing the admin monitoring TD-1
+  ticket and #119 already ticking the community pool calculation ticket as done-not-built - both
+  taken, skipped. The next unchecked, ungated ticket down was this one.
+- **Grepped for the ticket's own word before writing any code.** "XGBoost" turns up in exactly one
+  place with real logic behind it: `api/scoring_logic.py`, a rule-based penalty calculator its own
+  docstring calls a "mock XGBoost". Nothing in `package.json`, `vercel.json`, or
+  `.github/workflows/*.yml` calls into `api/main.py`; `.vercelignore` excludes it by name, and two
+  existing rebuild-audit docs (`docs/working/findings.md`, `docs/rebuild/audit-api-contracts.md`)
+  already record it as dead code nothing serves.
+- **The real wiring exists, just not as ML.** `functions/src/scoring/tripMetrics.ts` computes a
+  deterministic weighted score (speed 25%, braking 25%, accel 20%, cornering 20%, phone 10%) and
+  `functions/src/scheduled/damoovSync.ts` folds it into `drivingProfile.currentScore` on the user
+  doc - the goal the ticket names, risk scoring wired to `drivingProfile`, is live in production.
+  `ARCHITECTURE.md` section 5.4 already documents the deterministic scorer as the deliberate
+  current design and names a real ML/XGBoost layer as future work sitting on top of it, not a
+  decision anyone reversed.
+- **Ticked with a note rather than left open against dead code**, since re-implementing the mock
+  or leaving the box unchecked against something nothing calls would both misrepresent the state.
+  Raised the actual remaining gap as a follow-up: `api/main.py`, `api/__init__.py` and
+  `api/requirements.txt` are confirmed unreachable and worth deleting in their own ticket, and a
+  real trained ML model is a separate project (training data, hosting, inference latency), not a
+  reword.
+- **Verified:** documentation-only change, no source touched. `git diff --stat` shows only
+  `ROADMAP.md` and this file.
+
 ### 2026-09-10 - The gate was judging /leaderboard before the page had rendered at all
 
 `nightly/2026-09-10`. Closes ROADMAP's "The design-law gate intermittently measures an empty
