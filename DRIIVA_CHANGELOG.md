@@ -35,6 +35,113 @@ sprint)" under "Damoov & Feedback".
 - **Verified:** documentation-only change, no source touched. `git diff --stat` shows only
   `ROADMAP.md` and this file.
 
+### 2026-09-12 - Community pool calculation ticket was already done, just never ticked
+
+`nightly/2026-09-12`. Closes ROADMAP's "Community pool calculation using aggregated
+drivingProfile data" under "Damoov & Feedback".
+
+- **Checked the ticket's own symptom before touching anything.** The only other unblocked,
+  untaken tickets tonight were the Stripe checkout for premium payments, the premium amount
+  display on the policy page, and splitting `server/routes.ts` - all three already exist in the
+  code (`client/src/pages/checkout.tsx` + `create-subscription`/`create-checkout` in
+  `paymentRoutes.ts`, `policy.tsx` line 154, and `server/routes.ts` is 43 lines that only wire up
+  six already-split `server/http/*` modules). This one was the same shape: real, done, never
+  ticked.
+- **What actually does the calculation.** `functions/src/triggers/driverProfile.ts` rolls each
+  finished trip into the driver's `drivingProfile.currentScore` as a weighted average inside a
+  Firestore transaction, then `calculateRiskTier(newScore)` turns that aggregated score into a
+  risk tier on the same write. `functions/src/scheduled/pool.ts` finalises the monthly pool
+  period off the resulting `PoolShareDocument`s. Nothing here is a stub or a TODO - it is the same
+  code path `finalizePoolPeriod` and the pool trigger tests already exercise.
+- **No code changed.** Confirmed with `functions/src/__tests__/scheduled/pool.test.ts` and
+  `functions/src/__tests__/triggers`, 4 files, 55 passing, before ticking the box.
+- **Left `Rewards eligibility logic (Tesco/Halfords/Nectar thresholds based on
+  overallSafetyScore)` unchecked rather than closing it under the wrong shape.** The shipped
+  rewards system (`RewardsTimeline`, "Make It Polished") is day/milestone-based, not a
+  score-threshold ladder - a different design, not an unfinished one. That is a product call, not
+  a coding gap, so it stays open with a note instead of being ticked against work that doesn't
+  match it.
+
+**Tests:** `npx vitest run functions/src/__tests__/scheduled/pool.test.ts
+functions/src/__tests__/triggers` - 4 files, 55 passing. No source files touched, so this is
+confirmation the claim holds, not a regression check. `npm run gates` not run: nothing outside
+`ROADMAP.md`/`DRIIVA_CHANGELOG.md` changed.
+
+### 2026-09-11 - The admin monitoring page was publishing seven numbers nobody had measured
+
+`nightly/2026-09-11`. Closes ROADMAP's TD-1 under "Tech debt lifted out of code comments".
+
+- **The ticket undercounted, and named the wrong cause.** It said four fields render as hardcoded
+  zeros. Only one of the four ever reached the screen: `functionsInvocations` printed "0" under the
+  heading "Billable calls", because `(0).toLocaleString()` is the truthy string `"0"` and walked
+  straight through the `|| 'N/A'` meant to catch it. `avgLatencyMs` printed "N/A" by luck, a falsy
+  check catching a zero it was not written for, and `firestoreReads`/`firestoreWrites` were computed
+  on every load and never rendered anywhere. Fixing the four named lines would have left the page
+  lying.
+- **What was actually wrong, found by rendering it.** Both fetchers ended in `catch { return
+  ZEROS }`, a complete, well-formed object returned on failure - the same defect shape as the
+  `settle` timeout closed on 10 Sep, where success and give-up returned the same nothing. It matters
+  here because in production this page ALWAYS fails: it queries Firestore with the client SDK, and
+  `trips` reads are scoped to their owner while `aiUsageTracking` is `allow read, write: if false`
+  for every client including one with an admin-shaped claim, both already pinned in
+  `tests/rules/deny-by-design-and-catchall.test.ts`. Signed in as an admin against the QA emulator,
+  the pre-change page reported: Total Processed 0, Failed 0, Stuck 0, Avg Latency N/A, AI Spend today
+  and this month at zero pounds each, Function Invocations 0, and "Last Trip: Never". Seven values, a
+  fleet-wide claim among them, none of them a measurement.
+- **Fix, at the fetchers rather than at the seven call sites.** Both throw now. React Query surfaces
+  the error and each section renders an `Unreadable` panel carrying the real reason, which on the
+  same emulator run reads "Property userId is undefined on object. for 'list' @ L182" for the trip
+  pipeline and "false for 'list' @ L419" for AI spend - the rules lines that refused, on screen,
+  where they are useful. `retry: false` on both: a permission denial is a settled fact about the
+  rules and three backed-off retries only delay the page admitting it. "Last Trip" says "Unreadable"
+  instead of "Never", because "Never" is a claim about the fleet and must not be what a failed read
+  prints.
+- **The latency is a real measurement now, not a parsed log.** The ticket proposed scraping
+  `[metric] trip_pipeline` out of Cloud Logging. There was no need: `finalizeTripFromPoints` computes
+  `Date.now() - pipelineStartMs` and throws it away into that log line, so it now writes
+  `pipelineLatencyMs` in the same update that sets the trip's status, read once and used for both the
+  document and the log so the two can never drift. The page averages it over trips the SERVER
+  finalised only. That filter is the point: `firestore.rules` lets a driver create their own trip
+  document carrying any unmodelled field, so a latency on a trip they still control is a claim, but
+  `completed` is unreachable from the client's allowed transitions (recording -> processing |
+  failed), and the server writes the latency in the same update that sets it.
+- **Deleted rather than fixed.** `firestoreReads` and `firestoreWrites` are gone from `CostTracking`
+  entirely, and `functionsInvocations` with them: a shape that cannot hold a number cannot publish a
+  fake one. The invocations card stays on screen reading "Not measured - needs the Cloud Monitoring
+  API (ROADMAP TD-1)", deliberately outside the read-failure branch, because Cloud Monitoring is
+  missing whether or not Firestore answers and the two gaps are different. A fourth `MetricCard`
+  status, `unmeasured`, keeps a card with nothing behind it from being painted the same green as a
+  healthy reading; the word carries the meaning, the colour only stops it reading as a verdict.
+- **Not fixed, on purpose.** The page still cannot read anything in production. That needs admin
+  custom claims or a server endpoint, which is a decision, not a nightly. Raised as TD-6, with the
+  Cloud Monitoring credentials as TD-7. Loosening `firestore.rules` to make the page work was never
+  on the table.
+
+- **Caught in the 375px capture.** With the read-failure panel taking two of three columns, the
+  two-column mobile grid left the invocations card alone at half width with its value wrapped to
+  "Not / measured". The cost grid is single-column until `sm:` now. The same capture caught a
+  second, older defect and it is fixed too: `MobileMenuButton` is `fixed top-4 left-4` and sat
+  on top of the page title, so EVERY admin page rendered its heading truncated at 375px -
+  "Live Monitoring" read as "e Monitoring". Fixed once in `AdminLayout` (`pl-14 lg:pl-0` on the
+  title block) rather than on this page, so all six admin routes clear the button; desktop is
+  untouched above `lg`. Pinned by a ninth test that fails when the indent is removed.
+
+**Tests:** red first. `functions/src/__tests__/triggers/tripFinalisation.test.ts` (3) drives the real
+`finalizeTripFromPoints` and failed on the missing field and on the log disagreeing with the
+document; its third test passed from the start, pinning that finalisation is otherwise unchanged.
+`client/src/__tests__/admin-monitoring-metrics.test.tsx` (7) covers the averaging and its trust
+filter, then renders the real page with no Firestore and asserts the failure is named rather than
+printed as zeros. Two planted regressions, each failing only what it breaks: restoring the
+zero-object fallback fails the "names the failure" test alone, and putting a `0` back in the
+invocations card fails the invocations test alone. Full suite 110 files, 1222 passing, 2 skipped, 3
+todo. `npm run build` exit 0, `tsc --noEmit` clean. `npm run gates` green twice, DESIGN LAWS on 5 of
+5 routes and AXE 0 serious or critical across 14 of 14; `/admin/monitoring` is behind `AdminRoute`
+and in neither gate's route list, so it was checked by hand - the QA driver flipped to `isAdmin` in
+the emulator, then the page rendered at 756px and 1440px before and after the change, which is where
+the seven fabricated values above were read off the screen.
+
+---
+
 ### 2026-09-10 - The gate was judging /leaderboard before the page had rendered at all
 
 `nightly/2026-09-10`. Closes ROADMAP's "The design-law gate intermittently measures an empty
