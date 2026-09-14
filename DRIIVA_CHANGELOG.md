@@ -5,6 +5,42 @@
 
 ## Entries
 
+### 2026-09-14 - The rewards eligibility ticket was written against a brief that had already changed
+
+`nightly/2026-09-14`. Closes ROADMAP's "Rewards eligibility logic (Tesco/Halfords/Nectar thresholds
+based on overallSafetyScore)" under "Damoov & Feedback".
+
+- **Checked the ticket's own example first, per the standing rule.** The ticket names Tesco,
+  Halfords and Nectar as the reward vehicle. `RewardsTimeline.tsx`'s own header comment records Wave
+  0 (0c): those named partner vouchers and their cash values were removed from every tier because no
+  partnership with any of them exists, and the "Redeem Now" button's only effect had been a toast
+  apologising for that. Naming a partner Driiva has no deal with is exactly the kind of fabricated
+  claim this repo has shipped before and had to walk back - so re-adding the names to close this
+  ticket "as written" would have been the wrong fix, not the right one.
+- **The eligibility half the ticket actually cared about is real and live.** `rewards.tsx` computes
+  each tier's lock state from `drivingProfile.streakDays` and `Math.round(drivingProfile.currentScore)`
+  against thresholds that match what `RewardsTimeline.tsx` displays to the driver: day5 at 5 days +
+  score >= 60, day10 at 10 days + score >= 65, month3 at 90 days + score >= 70, anniversary at 365
+  days + score >= 70 (team_driiva is day-only, no score gate). That is a real score-threshold
+  eligibility function running in production, just gating a recognition milestone rather than a named
+  voucher.
+- **One real gap found while tracing this, left open rather than papered over.** `shared/firestore/engagement.ts`
+  declares `RewardMilestoneDocument` with a `status` of `locked | unlocked | claimed`, and
+  `RewardsTimeline.tsx` renders a `claimed` state with a redemption code. Nothing in `client/src` or
+  `functions/src` ever writes to `users/{userId}/rewardMilestones/{rewardId}` or reads it back - the
+  states array `rewards.tsx` builds only ever produces `unlocked` or `locked`. A reward can be earned
+  but can never be marked claimed. Not fixed here since it is new scope beyond this ticket, not
+  something this ticket asked for; noted in ROADMAP so it does not read as done.
+- **No code changed.** This was a verify-then-tick pass, not an implementation - ticking a
+  behaviourally-complete ticket that had drifted from its own wording would be worse than leaving it
+  open, so the roadmap entry records what shipped and what did not, rather than a bare checkbox.
+
+**Verified:** read `client/src/pages/rewards.tsx`, `client/src/components/RewardsTimeline.tsx`,
+`shared/firestore/engagement.ts` end to end; grepped the full tree for `Nectar`, `Halfords`, `Tesco`
+and `RewardMilestoneDocument` writers/readers to confirm the partner tie-in is gone by design and the
+claimed path is unwired, not just unseen by this search. No test suite run - no production code
+changed.
+
 ### 2026-09-13 - The XGBoost ticket was asking for a model that had already been replaced
 
 `nightly/2026-09-13`. Closes ROADMAP's "XGBoost risk model wired to drivingProfile scores (next
@@ -141,6 +177,7 @@ the emulator, then the page rendered at 756px and 1440px before and after the ch
 the seven fabricated values above were read off the screen.
 
 ---
+
 
 ### 2026-09-10 - The gate was judging /leaderboard before the page had rendered at all
 
