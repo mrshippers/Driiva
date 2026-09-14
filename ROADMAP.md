@@ -114,9 +114,13 @@ Three waves merged through `feat/fable-algo` and `feat/fable-trip` into `feat/fa
 - [x] Feedback collection system (Settings → FeedbackModal → Firestore) - *done: star rating + freetext widget in settings; writes to `feedback/{autoId}`; admin dashboard at `/admin/feedback`*
 - [x] GDPR-compliant privacy/terms for telematics data - *done: Damoov named as Article 28 data processor; telematics consent clause; rewards framing (FCA-clean)*
 - [x] Firestore security rules for feedback + systemLogs - *done: authenticated create on feedback; admin SDK only on systemLogs*
-- [ ] XGBoost risk model wired to drivingProfile scores (next sprint)
+- [x] XGBoost risk model wired to drivingProfile scores (next sprint) - *reworded 2026-09-13, not built as literally written. The `api/` FastAPI service (`api/scoring_logic.py`) is a "mock XGBoost" that was never wired in - `.vercelignore` excludes it and two rebuild-audit docs (`docs/working/findings.md`, `docs/rebuild/audit-api-contracts.md`) already call it dead. The real, live wiring to `drivingProfile` is `functions/src/scoring/tripMetrics.ts`'s deterministic weighted-penalty scorer (speed 25%, braking 25%, accel 20%, cornering 20%, phone 10%), folded into `drivingProfile.currentScore` by `functions/src/scheduled/damoovSync.ts`. `ARCHITECTURE.md` section 5.4 already documents this as the deliberate present-state design, with a real ML/XGBoost layer named as a future-state item, not a rejected one. Ticking the risk-scoring-to-drivingProfile goal as done rather than leaving it open against a mock that nothing calls; a real ML model stays unbuilt and is its own project (training data, hosting, inference latency), not a nightly diff. Follow-up: `api/main.py`, `api/__init__.py`, `api/requirements.txt` and the rest of `api/`'s FastAPI-only files are confirmed dead and worth deleting in their own ticket.*
 - [ ] Community pool calculation using aggregated drivingProfile data
 - [x] Rewards eligibility logic (Tesco/Halfords/Nectar thresholds based on overallSafetyScore) - *ticket predates the Wave 0 (0c) redesign and named the wrong shape. The eligibility logic it asked for is real and live: `client/src/pages/rewards.tsx` computes each tier's lock state from `drivingProfile.streakDays` and `Math.round(drivingProfile.currentScore)` against the same thresholds `RewardsTimeline.tsx` displays (day5 needs 5 days + score >= 60, day10 needs 10 days + score >= 65, month3 needs 90 days + score >= 70, anniversary needs 365 days + score >= 70). What the ticket named - Tesco/Halfords/Nectar as the reward - was deliberately removed in Wave 0 (0c, see `RewardsTimeline.tsx` header comment): no partnership with any of those three exists, so naming them was a fabricated claim, not a feature to build. Recognition milestones replaced them. Not closing this ticket by matching the letter of a stale brief - see `DRIIVA_CHANGELOG.md` for the full trace, including the one real gap this pass found: `RewardMilestoneDocument`/`claimed` status is declared in `shared/firestore/engagement.ts` but nothing writes or reads it, so a reward can never move past 'unlocked' today.*
+- [ ] Rewards eligibility logic (Tesco/Halfords/Nectar thresholds based on overallSafetyScore)
+- [ ] XGBoost risk model wired to drivingProfile scores (next sprint)
+- [x] Community pool calculation using aggregated drivingProfile data - *this was stale: `functions/src/triggers/driverProfile.ts` already rolls each finished trip into the driver's weighted `drivingProfile.currentScore` transactionally, `calculateRiskTier(newScore)` turns that into a risk tier on the same write, and `functions/src/scheduled/pool.ts` finalises the monthly pool period off the resulting `PoolShareDocument`s. Ticked 2026-09-12, no code changed - see `nightly/2026-09-12`.*
+- [ ] Rewards eligibility logic (Tesco/Halfords/Nectar thresholds based on overallSafetyScore) - superseded by a different design: the shipped rewards system (`RewardsTimeline`, done under "Make It Polished") is day/milestone-based (#Day5, #Day10, #Month3, #Anniversary), not a score-threshold ladder. Needs a product call on whether score-gated rewards are still wanted alongside it, not more code - left unchecked rather than closed under a design it doesn't match.
 
 ## Sprint: "Make It Real" (Week 1–2)
 
@@ -220,7 +224,31 @@ These were `TODO` comments sitting in source. None can be closed without a
 credential or a product decision, so each is a ticket here and the code carries
 a plain reference to it instead of a marker.
 
-- [ ] **TD-1 Admin monitoring reads no real metrics.** `client/src/pages/admin/monitoring.tsx` renders `avgLatencyMs`, `functionsInvocations`, `firestoreReads` and `firestoreWrites` as hardcoded zeros. The latency figure needs parsing out of the `[metric] trip_pipeline` log lines that already exist; the other three need the Cloud Monitoring API, which needs the API enabled and a service account with `monitoring.viewer`. Until then the page shows four zeros that look like measurements and are not.
+- [x] **TD-1 Admin monitoring reads no real metrics.** - *done: `nightly/2026-09-11`. The
+  count was low and the cause was elsewhere. Of the four fields named, only `functionsInvocations`
+  ever reached the screen as a zero; `avgLatencyMs` printed "N/A" because a falsy check caught it,
+  and `firestoreReads`/`firestoreWrites` were computed and never rendered at all. What the ticket
+  missed is that BOTH fetchers answered any failure with a complete object of zeros, and in
+  production every read on this page fails: `trips` is owner-scoped with no admin escape and
+  `aiUsageTracking` is `allow read, write: if false` for every client, admin claim included
+  (`tests/rules/deny-by-design-and-catchall.test.ts`). Rendered signed-in against the QA emulator,
+  the page reported seven fabricated values, including this month's Claude spend as a confident zero
+  pounds and "Last Trip: Never". The fetchers throw now and each section names its own failure with
+  the rules line that refused it. The latency half is closed for real rather than parsed out of a
+  log: `finalizeTripFromPoints` already measured its own duration and threw the number away, so it
+  writes `pipelineLatencyMs` in the same update that sets the status, and the page averages it over
+  trips the SERVER finalised - a client can put any field on a trip it created, so `completed`, which
+  its allowed transitions cannot reach, is the trust boundary. Held by
+  `functions/src/__tests__/triggers/tripFinalisation.test.ts` and
+  `client/src/__tests__/admin-monitoring-metrics.test.tsx`.*
+- [ ] **TD-6 The admin pages have no read path at all.** Every Firestore query on
+  `client/src/pages/admin/*` runs through the client SDK against rules that scope reads to their
+  owner, so an admin sees their own data or a permission denial, whichever the page asks for. Since
+  TD-1 the denial is at least visible instead of rendering as zeros. Closing it means admin custom
+  claims (M5) or a server endpoint, and neither is a nightly-sized decision - needs Jamal.
+- [ ] **TD-7 Function invocations, Firestore reads and Firestore writes are still not measured.**
+  They need the Cloud Monitoring API enabled and a service account with `monitoring.viewer`. The
+  monitoring page says so on the card rather than printing a zero. Needs Jamal (creds).
 - [x] **TD-2 The web trip recorder has no phone-pickup detection.** - *done: `nightly/2026-09-08`. Half the premise was stale. The recorder did have a signal, the `visibilitychange` proxy that `packages/scoring/src/tripMetrics.ts` has named as the web's definition of a pickup since M2-DEC-1; the code comment this ticket was lifted from said the count "stays 0" and had been wrong since that proxy landed. What was genuinely missing is the thing the ticket named: an accelerometer. A driver who picked the phone up, read the recording screen and put it back was invisible to a component worth 10% of the score, because `visibilitychange` only fires on leaving the tab. `client/src/lib/phonePickup.ts` now runs a browser heuristic off `devicemotion` beside the proxy, and both feed ONE counter, so lifting the phone and then switching app is one pickup rather than two. It mirrors mobile's threshold, sustain window and debounce, and deliberately does not mirror its units or its sample-rate rule: DeviceMotion reports m/s^2 from two streams that rest at different values, and browsers sample fast enough to resolve the oscillation inside a real pickup, which mobile's reset-on-one-quiet-sample rule would read as no pickup at all. `sawMotionReading` keeps a sensorless desktop's zero distinguishable from a measured zero. Held by 22 unit tests on the heuristic and 6 page-level tests on the wiring, the half that failed silently on mobile for six days in `cd35366`.*
 - [x] **The design-law gate intermittently measures an empty `/leaderboard`.** - *done:
   `nightly/2026-09-10`. Reproduced on the first run of the night, then caught by logging every
