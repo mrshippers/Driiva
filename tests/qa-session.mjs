@@ -70,35 +70,69 @@ export async function evaluate(client, expression, { awaitPromise = true } = {})
 }
 
 /**
+ * Every way this app can say "not ready yet", in one selector.
+ *
+ * Exported so the gate and the app are held together by a test rather than by
+ * hope: tests/unit/qa-settle-busy.test.tsx renders the real loading components
+ * through this exact string, so re-marking one of them fails a test instead of
+ * quietly widening the window below.
+ *
+ * `[data-app-loading]` is BrandedLoader, and it is the entry that was missing.
+ * See the comment in settle for what that cost.
+ */
+export const BUSY_SELECTOR =
+  '.skeleton-shimmer, .loading-shimmer, [data-skeleton], [data-app-loading]';
+
+/**
  * Polls until the page stops changing. Short probes from here rather than one
  * long in-page promise: any navigation destroys the page's execution context,
  * and a long wait inside the page is itself what throws when that happens.
+ *
+ * Returns true if the page came to rest, false if it ran out of time. CALLERS
+ * MUST CHECK. It used to return the same nothing either way, which made a
+ * timeout indistinguishable from a measurement.
  */
 export async function settle(client, { timeoutMs = 20000 } = {}) {
   /*
-   * Skeletons and web fonts are part of the sample on purpose.
+   * The app's loading states and web fonts are part of the sample on purpose.
    *
-   * Without the skeleton count a page settles on its own LOADING state, and
-   * the gate then measures placeholders: the design laws once reported a
-   * capsule violation from the dashboard's skeleton bars and "NO PROSE
-   * FOUND", having never seen the dashboard. The accessibility audit had the
-   * same weakness from the other end, reporting nine colour-contrast
-   * violations on a leaderboard that was still drawing its chart, then
-   * reporting none on the next run.
+   * Without them a page settles on its own LOADING state, and the gate then
+   * measures placeholders: the design laws once reported a capsule violation
+   * from the dashboard's skeleton bars and "NO PROSE FOUND", having never seen
+   * the dashboard. The accessibility audit had the same weakness from the other
+   * end, reporting nine colour-contrast violations on a leaderboard that was
+   * still drawing its chart, then reporting none on the next run.
    *
-   * One definition of "settled" for both gates, so they cannot disagree about
-   * when a page is ready to be judged.
+   * Counting SKELETONS ALONE was not enough, and this is how that was found.
+   * `/leaderboard` failed law 5 with "NO PROSE FOUND" on one run and passed on
+   * the two either side of it, same commit, in a diff that never touched the
+   * route. Logging every sample taken during a run caught the frame:
+   *
+   *   1:926:26:1:sk0  ->  { text: "Home\nTrips\nRewards\nProfile", loader: true }
+   *
+   * BrandedLoader filling the screen, and the only text on the page coming from
+   * the nav underneath it. Both questions this asks gave the wrong answer: there
+   * IS text, 26 characters of nav labels, and there are NO skeletons, because
+   * BrandedLoader draws a pulsing logo rather than skeleton bars. Three such
+   * samples in a row and the laws run against a blank screen. Every nav label is
+   * shorter than the 12 characters law 5 counts as prose, so the gate reported a
+   * type-floor violation on a page it had never seen.
+   *
+   * The fix is not a longer wait or a text-length threshold: a page is allowed
+   * to be terse. It is that the loader now says so itself, so the sample counts
+   * every loading surface the app has, not the one kind it happened to know.
+   *
+   * One definition of "settled" for all three gates, so they cannot disagree
+   * about when a page is ready to be judged.
    */
   const SAMPLE = `(() => {
     const root = document.getElementById('root');
-    const skeletons = document.querySelectorAll(
-      '.skeleton-shimmer, .loading-shimmer, [data-skeleton]'
-    ).length;
+    const busy = document.querySelectorAll(${JSON.stringify(BUSY_SELECTOR)}).length;
     return (root ? root.children.length : 0) + ':' +
            document.querySelectorAll('body *').length + ':' +
            document.body.innerText.length + ':' +
            (document.fonts.status === 'loaded' ? 1 : 0) + ':' +
-           'sk' + skeletons;
+           'sk' + busy;
   })()`;
 
   let last = '';
@@ -116,13 +150,14 @@ export async function settle(client, { timeoutMs = 20000 } = {}) {
       continue;
     }
     // Still loading counts as not settled, whether that is an empty root, no
-    // text, unloaded fonts, or a screen of skeletons.
+    // text, unloaded fonts, or anything still saying it is busy.
     const empty = now.startsWith('0:') || now.includes(':0:') || !now.endsWith(':sk0');
     stable = !empty && now === last ? stable + 1 : 0;
     last = now;
-    if (stable >= 3) return;
+    if (stable >= 3) return true;
     await new Promise((r) => setTimeout(r, 250));
   }
+  return false;
 }
 
 /**
@@ -198,7 +233,12 @@ export async function signedInTab() {
   return { tab, client, signedIn };
 }
 
-/** Navigates an existing signed-in tab via the SPA router and settles. */
+/**
+ * Navigates an existing signed-in tab via the SPA router and settles.
+ *
+ * Throws if the page never settles, so a route that is still loading is
+ * reported as NOT REACHED by both gates rather than measured mid-load.
+ */
 export async function goto(client, path) {
   await evaluate(
     client,
@@ -209,7 +249,9 @@ export async function goto(client, path) {
      })()`,
     { awaitPromise: false },
   );
-  await settle(client);
+  if (!(await settle(client))) {
+    throw new Error(`never settled: still loading after navigating to ${path}`);
+  }
 }
 
 /**

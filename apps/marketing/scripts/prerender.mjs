@@ -28,6 +28,7 @@ const {
   ROUTE_META: ROUTES,
   ORIGIN,
   fullTitle,
+  FAQS,
 } = await import(join(root, 'dist-ssr', 'entry-server.js'));
 const template = readFileSync(join(dist, 'index.html'), 'utf8');
 
@@ -38,12 +39,48 @@ const REQUIRED = [
   /<meta\s+name="description"[\s\S]*?\/>/,
   /<link rel="canonical"[^>]*\/>/,
   /<div id="root"><\/div>/,
+  // If the marker goes, the FAQ schema silently stops shipping. Fail instead:
+  // a page with no FAQPage schema is recoverable, a page with a stale one is a
+  // false regulatory claim served to a crawler.
+  /<!--FAQ_JSONLD-->/,
 ];
 for (const re of REQUIRED) {
   if (!re.test(template)) {
     throw new Error(`prerender: template no longer matches ${re}. Fix scripts/prerender.mjs.`);
   }
 }
+
+/**
+ * FAQPage schema, built from the same array <FAQ /> renders.
+ *
+ * These answers were hand-typed into index.html as well as written in
+ * src/sections/FAQ.tsx. The pair drifted, and the copy that drifted wrong was
+ * the machine-readable one, so the claim Google indexed about our regulatory
+ * status was stronger than the claim on the page. One source now; the schema
+ * cannot say anything the visible FAQ does not.
+ */
+if (FAQS.length === 0) {
+  throw new Error('prerender: FAQS is empty. Refusing to ship an empty FAQPage schema.');
+}
+
+const faqJsonLd = `<script type="application/ld+json">
+${JSON.stringify(
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQS.map(({ q, a }) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
+    })),
+  },
+  null,
+  2,
+)
+  // A "<" inside a JSON string would end the script element early.
+  .replace(/</g, '\\u003c')}
+</script>`;
+
 
 let written = 0;
 for (const route of ROUTES) {
@@ -75,7 +112,8 @@ for (const route of ROUTES) {
       /<meta name="twitter:description"[^>]*\/>/,
       `<meta name="twitter:description" content="${esc(route.desc)}" />`,
     )
-    .replace('<div id="root"></div>', `<div id="root">${body}</div>`);
+    .replace('<div id="root"></div>', `<div id="root">${body}</div>`)
+    .replace('<!--FAQ_JSONLD-->', () => faqJsonLd);
 
   const outPath =
     route.path === '/' ? join(dist, 'index.html') : join(dist, route.path, 'index.html');

@@ -18,7 +18,7 @@
  *    file already uses, and is exactly as unverified as everything else here.
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 
 // ============================================================================
 // CURRENCY SEAM

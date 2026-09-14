@@ -114,9 +114,13 @@ Three waves merged through `feat/fable-algo` and `feat/fable-trip` into `feat/fa
 - [x] Feedback collection system (Settings → FeedbackModal → Firestore) - *done: star rating + freetext widget in settings; writes to `feedback/{autoId}`; admin dashboard at `/admin/feedback`*
 - [x] GDPR-compliant privacy/terms for telematics data - *done: Damoov named as Article 28 data processor; telematics consent clause; rewards framing (FCA-clean)*
 - [x] Firestore security rules for feedback + systemLogs - *done: authenticated create on feedback; admin SDK only on systemLogs*
-- [ ] XGBoost risk model wired to drivingProfile scores (next sprint)
+- [x] XGBoost risk model wired to drivingProfile scores (next sprint) - *reworded 2026-09-13, not built as literally written. The `api/` FastAPI service (`api/scoring_logic.py`) is a "mock XGBoost" that was never wired in - `.vercelignore` excludes it and two rebuild-audit docs (`docs/working/findings.md`, `docs/rebuild/audit-api-contracts.md`) already call it dead. The real, live wiring to `drivingProfile` is `functions/src/scoring/tripMetrics.ts`'s deterministic weighted-penalty scorer (speed 25%, braking 25%, accel 20%, cornering 20%, phone 10%), folded into `drivingProfile.currentScore` by `functions/src/scheduled/damoovSync.ts`. `ARCHITECTURE.md` section 5.4 already documents this as the deliberate present-state design, with a real ML/XGBoost layer named as a future-state item, not a rejected one. Ticking the risk-scoring-to-drivingProfile goal as done rather than leaving it open against a mock that nothing calls; a real ML model stays unbuilt and is its own project (training data, hosting, inference latency), not a nightly diff. Follow-up: `api/main.py`, `api/__init__.py`, `api/requirements.txt` and the rest of `api/`'s FastAPI-only files are confirmed dead and worth deleting in their own ticket.*
 - [ ] Community pool calculation using aggregated drivingProfile data
+- [x] Rewards eligibility logic (Tesco/Halfords/Nectar thresholds based on overallSafetyScore) - *ticket predates the Wave 0 (0c) redesign and named the wrong shape. The eligibility logic it asked for is real and live: `client/src/pages/rewards.tsx` computes each tier's lock state from `drivingProfile.streakDays` and `Math.round(drivingProfile.currentScore)` against the same thresholds `RewardsTimeline.tsx` displays (day5 needs 5 days + score >= 60, day10 needs 10 days + score >= 65, month3 needs 90 days + score >= 70, anniversary needs 365 days + score >= 70). What the ticket named - Tesco/Halfords/Nectar as the reward - was deliberately removed in Wave 0 (0c, see `RewardsTimeline.tsx` header comment): no partnership with any of those three exists, so naming them was a fabricated claim, not a feature to build. Recognition milestones replaced them. Not closing this ticket by matching the letter of a stale brief - see `DRIIVA_CHANGELOG.md` for the full trace, including the one real gap this pass found: `RewardMilestoneDocument`/`claimed` status is declared in `shared/firestore/engagement.ts` but nothing writes or reads it, so a reward can never move past 'unlocked' today.*
 - [ ] Rewards eligibility logic (Tesco/Halfords/Nectar thresholds based on overallSafetyScore)
+- [ ] XGBoost risk model wired to drivingProfile scores (next sprint)
+- [x] Community pool calculation using aggregated drivingProfile data - *this was stale: `functions/src/triggers/driverProfile.ts` already rolls each finished trip into the driver's weighted `drivingProfile.currentScore` transactionally, `calculateRiskTier(newScore)` turns that into a risk tier on the same write, and `functions/src/scheduled/pool.ts` finalises the monthly pool period off the resulting `PoolShareDocument`s. Ticked 2026-09-12, no code changed - see `nightly/2026-09-12`.*
+- [ ] Rewards eligibility logic (Tesco/Halfords/Nectar thresholds based on overallSafetyScore) - superseded by a different design: the shipped rewards system (`RewardsTimeline`, done under "Make It Polished") is day/milestone-based (#Day5, #Day10, #Month3, #Anniversary), not a score-threshold ladder. Needs a product call on whether score-gated rewards are still wanted alongside it, not more code - left unchecked rather than closed under a design it doesn't match.
 
 ## Sprint: "Make It Real" (Week 1–2)
 
@@ -184,7 +188,7 @@ These are known gaps that don't have tickets yet:
 - [x] **Achievements backend** - 8 definitions, unlock logic in Cloud Functions, frontend wired to real Firestore data.
 - [x] **WebAuthn/Passkey login** - *done, see the ticket above. This line was stale.*
 - [ ] **Staging environment** - `driiva-staging` project provisioned; manual steps remain (Blaze plan, deploy functions, Vercel staging). Recommended before any production payments go live.
-- [ ] **Marketing site sync** - live site runs on Framer (no automation API); local `marketing-site/index.html` is the canonical source for editorial hero + waitlist copy. Decide path: (a) manually paste CSS changes into Framer code overrides, (b) migrate the live site off Framer to Vercel (the `marketing-site/` build is deployable as-is), or (c) keep Framer for visual, and serve `/early-access` from the Next app. Current blocker: Framer has no write MCP/API available in this session.
+- [x] **Marketing site sync** - resolved by item above: driiva.co.uk is served from `apps/marketing/`, not Framer. The legacy `marketing-site/` tree was deleted on 9 Sep 2026 - it was in no build, no deploy config and no workflow, and it was still carrying two false claims ("Application underway with the FCA", "Join 500") that no lint could see. History has it if the editorial copy is ever wanted back.
 - [x] **Design system canonicalized** - `design-system/` at repo root now holds `colors_and_type.css` (ink ladder, brand gradient, glass, radii, shadows, motion, type stack), `README.md` (voice/tone/visual rules), `source/` (Figma rules + Instrument philosophy), `assets/` (14 brand PNGs). Marketing site + client DriivaLogo component switched to canonical v3 white wordmark. Mobile app theme already aligned to canonical "instrument" mode. Follow-up: rename client Vite CSS variables to match canonical token names.
 - [x] **Client SPA token alignment** - *done: `nightly/2026-09-06`. The canonical block had been in `client/src/index.css` since `c1e5ff4` and the `--color-*` names this ticket was written against were already gone; what remained was a compatibility-alias block of thirty legacy names (`--success-green`, `--primary-blue`, `--ease-smooth`, `--neutral-100` and friends), each a pure `var()` indirection to a canonical token, with 24 rules in the same file still written against them. The aliases are deleted and every rule speaks the canonical name. Computed values are unchanged by construction, since each alias resolved to exactly the token that replaced it. `--accent` stays because Tailwind's accent colour in `tailwind.config.ts` reads it, and `--radius-card` and `--radius-button` stay as semantic role tokens. `tailwind.config.ts` itself needed no change; it never used a legacy name. Held by `tests/unit/web-token-aliases.test.ts`: no legacy name declared or referenced anywhere in `client/src`, and every `var(--x)` the client reads resolves to a property it declares. That second check found two never-declared shadcn `--sidebar-*` tokens in the unused sidebar primitive; they are recorded as the known pre-existing exception rather than fixed under this ticket.*
 
@@ -220,15 +224,46 @@ These were `TODO` comments sitting in source. None can be closed without a
 credential or a product decision, so each is a ticket here and the code carries
 a plain reference to it instead of a marker.
 
-- [ ] **TD-1 Admin monitoring reads no real metrics.** `client/src/pages/admin/monitoring.tsx` renders `avgLatencyMs`, `functionsInvocations`, `firestoreReads` and `firestoreWrites` as hardcoded zeros. The latency figure needs parsing out of the `[metric] trip_pipeline` log lines that already exist; the other three need the Cloud Monitoring API, which needs the API enabled and a service account with `monitoring.viewer`. Until then the page shows four zeros that look like measurements and are not.
+- [x] **TD-1 Admin monitoring reads no real metrics.** - *done: `nightly/2026-09-11`. The
+  count was low and the cause was elsewhere. Of the four fields named, only `functionsInvocations`
+  ever reached the screen as a zero; `avgLatencyMs` printed "N/A" because a falsy check caught it,
+  and `firestoreReads`/`firestoreWrites` were computed and never rendered at all. What the ticket
+  missed is that BOTH fetchers answered any failure with a complete object of zeros, and in
+  production every read on this page fails: `trips` is owner-scoped with no admin escape and
+  `aiUsageTracking` is `allow read, write: if false` for every client, admin claim included
+  (`tests/rules/deny-by-design-and-catchall.test.ts`). Rendered signed-in against the QA emulator,
+  the page reported seven fabricated values, including this month's Claude spend as a confident zero
+  pounds and "Last Trip: Never". The fetchers throw now and each section names its own failure with
+  the rules line that refused it. The latency half is closed for real rather than parsed out of a
+  log: `finalizeTripFromPoints` already measured its own duration and threw the number away, so it
+  writes `pipelineLatencyMs` in the same update that sets the status, and the page averages it over
+  trips the SERVER finalised - a client can put any field on a trip it created, so `completed`, which
+  its allowed transitions cannot reach, is the trust boundary. Held by
+  `functions/src/__tests__/triggers/tripFinalisation.test.ts` and
+  `client/src/__tests__/admin-monitoring-metrics.test.tsx`.*
+- [ ] **TD-6 The admin pages have no read path at all.** Every Firestore query on
+  `client/src/pages/admin/*` runs through the client SDK against rules that scope reads to their
+  owner, so an admin sees their own data or a permission denial, whichever the page asks for. Since
+  TD-1 the denial is at least visible instead of rendering as zeros. Closing it means admin custom
+  claims (M5) or a server endpoint, and neither is a nightly-sized decision - needs Jamal.
+- [ ] **TD-7 Function invocations, Firestore reads and Firestore writes are still not measured.**
+  They need the Cloud Monitoring API enabled and a service account with `monitoring.viewer`. The
+  monitoring page says so on the card rather than printing a zero. Needs Jamal (creds).
 - [x] **TD-2 The web trip recorder has no phone-pickup detection.** - *done: `nightly/2026-09-08`. Half the premise was stale. The recorder did have a signal, the `visibilitychange` proxy that `packages/scoring/src/tripMetrics.ts` has named as the web's definition of a pickup since M2-DEC-1; the code comment this ticket was lifted from said the count "stays 0" and had been wrong since that proxy landed. What was genuinely missing is the thing the ticket named: an accelerometer. A driver who picked the phone up, read the recording screen and put it back was invisible to a component worth 10% of the score, because `visibilitychange` only fires on leaving the tab. `client/src/lib/phonePickup.ts` now runs a browser heuristic off `devicemotion` beside the proxy, and both feed ONE counter, so lifting the phone and then switching app is one pickup rather than two. It mirrors mobile's threshold, sustain window and debounce, and deliberately does not mirror its units or its sample-rate rule: DeviceMotion reports m/s^2 from two streams that rest at different values, and browsers sample fast enough to resolve the oscillation inside a real pickup, which mobile's reset-on-one-quiet-sample rule would read as no pickup at all. `sawMotionReading` keeps a sensorless desktop's zero distinguishable from a measured zero. Held by 22 unit tests on the heuristic and 6 page-level tests on the wiring, the half that failed silently on mobile for six days in `cd35366`.*
-- [ ] **The design-law gate intermittently measures an empty `/leaderboard`.** Observed on
-  `nightly/2026-09-08`: three consecutive `npm run gates` runs on the same commit, the middle one
-  failing law 5 with "NO PROSE FOUND" on that route while the runs either side measured 5 prose
-  nodes and 63 figures there. The gate is behaving correctly, refusing to call a measurement of
-  nothing green; the route is rendering empty some of the time, most likely measured before its data
-  arrives. Not investigated, and not caused by anything in that night's diff, which never touches
-  `/leaderboard`. Worth pinning before a red run gets read as a real violation, or worse, ignored.
+- [x] **The design-law gate intermittently measures an empty `/leaderboard`.** - *done:
+  `nightly/2026-09-10`. Reproduced on the first run of the night, then caught by logging every
+  sample `settle` took: `1:926:26:1:sk0`, which was `BrandedLoader` filling the screen with the only
+  text on the page coming from the nav underneath it. The route was not "rendering empty", as this
+  ticket guessed; it had not rendered at all yet, and the gate measured it anyway. `settle` asks two
+  questions and both gave the wrong answer there - there IS text, 26 characters of nav labels, and
+  there are NO skeletons, because `BrandedLoader` draws a pulsing logo rather than skeleton bars.
+  Every nav label is shorter than the 12 characters law 5 counts as prose, so law 5 reported a
+  type-floor violation on a page it had never seen. `BrandedLoader` now carries `data-app-loading`
+  and `settle` counts it, which covers every surface that loader serves (the Suspense fallback and
+  all five `ProtectedRoute` gates), not just `/leaderboard`. `settle` also returns whether it
+  settled instead of returning the same nothing on success and on a 20s timeout, and all three gates
+  now report a page that never settled as NOT REACHED rather than measuring it. Held by
+  `tests/unit/qa-settle-busy.test.tsx`.*
 
 - [ ] **TD-3 Seven Cloud Functions callables have no rate limiting.** `functions/src/http/admin.ts` (initializePool, cancelTrip, contribute), `classifier.ts` (classifyTrip, batch job) and `gdpr.ts` (export, delete). Needs a decision on the limits and on where the counters live, since the Express `rateLimiter` middleware does not reach a callable.
 - [ ] **TD-4 ZAR-vs-GBP conversion is an identity pass-through.** `functions/src/http/rootAdapter.ts` `resolveCurrency` returns its input unchanged: Root's sandbox models money in ZAR cents, Driiva is a GBP product, and no conversion is applied anywhere. Deliberately not guessed. Closes on either Root's UK/GBP product module key (needs sandbox credentials) or an FX rate signed off under D15. See `docs/rebuild/m4-grounding.md` sections 2 and 4.

@@ -58,54 +58,15 @@
       }
     </script>
 
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "Will Driiva really be cheaper than my current insurance?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "For safe drivers, yes, demonstrably. Our modelling shows the top 40% of drivers save 8 to 15% versus their current renewal. If you drive aggressively, we're not for you, and that's deliberate."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "What counts as a safe trip?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "We score five factors: smooth acceleration, gentle braking, calm cornering, speed discipline, and phone-free driving. Every factor is weighted and published in the app in real time. You see the score change as you drive."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "What happens if I have an accident?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Your claim is paid immediately and in full by our reinsurance capital. Score refunds are separate from claim protection. One bad week does not bankrupt you."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Is Driiva legal? Are you FCA-regulated?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Application in progress with the FCA Regulatory Sandbox, underwritten by a PRA-regulated UK reinsurer. We cannot sell policies yet, that is why this is a waitlist, not a checkout."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Do I need to install a dashcam, black box or OBD dongle?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "No. Your phone does everything. No hardware to buy, install, or forget to plug back in."
-            }
-          }
-        ]
-      }
-    </script>
+    <!--
+      The FAQPage schema is generated at build time from the QS array in
+      src/sections/FAQ.tsx by scripts/prerender.mjs and injected in place of
+      the marker below. It was hand-maintained here until 9 Sep 2026 and had
+      drifted: the visible FAQ gave the agreed regulatory position while the
+      schema, which is the copy a search engine reads, asserted a submitted
+      application that does not exist. Do not paste answers back in here.
+    -->
+    <!--FAQ_JSONLD-->
   </head>
   <body>
     <div id="root"></div>

@@ -4,6 +4,9 @@ import App from './App';
 
 // Re-exported so scripts/prerender.mjs reads the same table the client does.
 export { ROUTE_META, ORIGIN, fullTitle } from './lib/route-meta';
+// Same reason: the FAQPage JSON-LD is generated from the array the visible
+// FAQ renders, so the two cannot disagree.
+export { QS as FAQS } from './sections/FAQ';
 
 /**
  * Server entry, used only by scripts/prerender.mjs at build time.

@@ -25,7 +25,7 @@
  * seam. This file owns the callable functions and Firestore glue only.
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
 import { COLLECTION_NAMES, UserDocument, PolicyDocument, CoverageType } from '../types';
 import { EUROPE_LONDON } from '../lib/region';

@@ -66,11 +66,22 @@ const ROOT = repoRoot();
 // the three surfaces does not cover the product, it covers the part somebody
 // remembered to point it at, and the mobile app is the surface a user actually
 // signs up through.
+//
+// HTML is here since 9 Sep 2026, and so is the single file
+// `apps/marketing/index.html`. The visible FAQ said "Not yet. We are working
+// towards the FCA regulatory sandbox"; the JSON-LD in the page head, two
+// directories up from anything this law read, said "Application in progress
+// with the FCA Regulatory Sandbox". Nothing has been submitted. Google reads
+// the JSON-LD, so the structured claim a machine consumes was the false one
+// and the visible claim a human reads was the true one. The law's own
+// regulatory-claim shape matched that sentence on the first try once pointed
+// at the file: the guard was never blind, it was aimed away from the surface.
 const DIRS = [
   'client/src',
   'apps/marketing/src',
   'apps/marketing/api',
   'apps/marketing/public',
+  'apps/marketing/index.html',
   'server',
   'functions/src',
   'mobile/app',
@@ -83,6 +94,15 @@ function walk(dir, out = []) {
   try {
     entries = readdirSync(dir);
   } catch {
+    // A DIRS entry may name a single FILE. apps/marketing/index.html is one:
+    // the site's JSON-LD lived there, told Google an FCA application was in
+    // flight, and no sweep ever read it because the walker only took
+    // directories and the extension filter only took .ts/.tsx/.css/.txt/.md.
+    try {
+      if (statSync(dir).isFile()) out.push(dir);
+    } catch {
+      // absent path, nothing to lint
+    }
     return out;
   }
   for (const entry of entries) {
@@ -90,7 +110,7 @@ function walk(dir, out = []) {
     if (statSync(full).isDirectory()) {
       if (entry === 'node_modules') continue;
       walk(full, out);
-    } else if (/\.(tsx?|css|txt|md)$/.test(entry) && !SKIP.test(full)) {
+    } else if (/\.(tsx?|css|txt|md|html)$/.test(entry) && !SKIP.test(full)) {
       out.push(full);
     }
   }

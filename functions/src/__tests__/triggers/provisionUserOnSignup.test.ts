@@ -27,7 +27,7 @@ function fakeUserRecord(overrides: Partial<{ uid: string; email: string; display
     email: 'jamal@example.com',
     displayName: 'Jamal Driver',
     ...overrides,
-  } as unknown as import('firebase-functions').auth.UserRecord;
+  } as unknown as import('firebase-functions/v1').auth.UserRecord;
 }
 
 beforeEach(() => {

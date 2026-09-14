@@ -4,7 +4,7 @@
  * Admin-only callable to seed achievement definitions into Firestore.
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { getFirestore } from 'firebase-admin/firestore';
 import { ACHIEVEMENT_DEFINITIONS } from '../utils/achievements';
 import { EUROPE_LONDON } from '../lib/region';

@@ -19,7 +19,7 @@
  */
 
 import * as Sentry from '@sentry/node';
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 
 const SENTRY_DSN = process.env.SENTRY_DSN_FUNCTIONS;
 

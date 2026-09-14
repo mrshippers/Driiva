@@ -131,7 +131,9 @@ const notReached = [];
 for (const route of (requested.length ? requested.filter((r) => PUBLIC_ROUTES.includes(r)) : PUBLIC_ROUTES)) {
   const session = await incognitoTab(`${APP}${route}`);
   try {
-    await settle(session.client);
+    if (!(await settle(session.client))) {
+      throw new Error('never settled: still loading when the audit was due to run');
+    }
     // Report where we actually LANDED. A signed-out "/" is the welcome page,
     // but a stale session turns it into the dashboard, and auditing that under
     // the name "/" is how three routes came to report identical violations.

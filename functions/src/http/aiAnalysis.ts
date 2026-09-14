@@ -7,7 +7,7 @@
  * - getAIInsights: Fetch AI insights for a trip (authenticated users)
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { getFirestore } from 'firebase-admin/firestore';
 import {
   COLLECTION_NAMES,

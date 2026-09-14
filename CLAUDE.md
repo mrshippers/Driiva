@@ -131,7 +131,6 @@ The `skill-router` skill governs all dispatch in this project. On every task, ch
 - `design-system/` — canonical brand + UI tokens (authoritative — see Design System below)
 - `driiva-design-system/` — packaged design-system module
 - `apps/marketing/` — **active driiva.co.uk marketing SPA** (Vite + React + wouter; Tailwind v3.4; waitlist API via Firebase Admin + Resend; legal pages /privacy /terms /cookies /complaints /uk-survey)
-- `marketing-site/` — **legacy** editorial source, superseded by `apps/marketing/` (Framer split-brain resolved — see Known Blockers)
 - `hyperframes/` — branded video compositions (canonical, shipped May 2026, commit `37012a6`)
 - `Driiva Marketing/` — marketing collateral
 - `claude-sentinel/` — agent-driven QA harness

@@ -8,8 +8,7 @@
  * API docs: https://docs.damoov.com/
  */
 
-import * as functions from 'firebase-functions';
-import fetch from 'node-fetch';
+import * as functions from 'firebase-functions/v1';
 
 const DAMOOV_USER_API = 'https://user.telematicssdk.com/v1';
 const DAMOOV_DATAHUB_API = 'https://api.telematicssdk.com/indicators/v2';
@@ -79,7 +78,7 @@ export async function createDamoovUser(
         FirstName: '',
         LastName: '',
       }),
-      timeout: 10_000,
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!res.ok) {
@@ -131,7 +130,7 @@ export async function fetchDamoovTrips(
           'InstanceId': instanceId,
           'InstanceKey': instanceKey,
         },
-        timeout: 30_000,
+        signal: AbortSignal.timeout(30_000),
       },
     );
 
@@ -181,7 +180,7 @@ export async function fetchDamoovDailyStats(
           'InstanceId': instanceId,
           'InstanceKey': instanceKey,
         },
-        timeout: 15_000,
+        signal: AbortSignal.timeout(15_000),
       },
     );
 

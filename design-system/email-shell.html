@@ -42,6 +42,23 @@
     CSS background on tables entirely and only reads the HTML attribute).
     Keep both the DOCTYPE/html/body wrapper AND the bgcolor attributes intact
     when editing - dropping either one reintroduces the white margin.
+
+  MOBILE WIDTH (14 Sep 2026, measured at 375px in Chrome):
+    - The card is width:100%;max-width:600px with width="600" kept as the
+      attribute for Outlook. The old width:600px;max-width:100% held the card
+      at 600px, because max-width is not honoured on a fixed-width table: the
+      document measured 632px on a 375px screen.
+    - Stat cells use 14px side padding. At 20px the three-cell readout had a
+      357px minimum width, wider than the card's inner width on a phone.
+    FIGURE snippet (an inline screenshot, placed directly under the row it
+    proves). table-layout:fixed and box-sizing:border-box stop the image's
+    width attribute and border from widening the column:
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;table-layout:fixed;margin:2px 0 16px"><tr><td>
+        <img src="cid:fig1" width="494" alt="what it shows" style="display:block;box-sizing:border-box;width:100%;max-width:494px;height:auto;border:1px solid rgba(255,255,255,0.10);border-radius:12px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.46);padding-top:9px">fig 01 / what the shot proves</div>
+      </td></tr></table>
+    Declare the cid in an ATTACHMENTS line in this header comment, bare:
+      ATTACHMENTS: attachments:[{filename:"shot1.png", path:"/abs/path.png", cid:fig1}]
   ============================================================================
 -->
 <!DOCTYPE html>
@@ -59,38 +76,38 @@
 </head>
 <body style="margin:0;padding:0;width:100%;background:#050509;background-color:#050509;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#050509" style="background:#050509;background-color:#050509;background-image:radial-gradient(1100px 520px at 50% -22%,rgba(107,95,220,0.12),transparent 60%);padding:40px 16px"><tbody><tr><td align="center">
- <table role="presentation" width="600" cellpadding="0" cellspacing="0" bgcolor="#0a0a14" style="width:600px;max-width:100%;background:#0a0a14;background-color:#0a0a14;border:1px solid rgba(255,255,255,0.08);border-radius:18px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.55)"><tbody>
+ <table role="presentation" width="600" cellpadding="0" cellspacing="0" bgcolor="#0a0a14" style="width:100%;max-width:600px;background:#0a0a14;background-color:#0a0a14;border:1px solid rgba(255,255,255,0.08);border-radius:18px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.55)"><tbody>
 
   <!-- signature brand gradient as the surface hairline (amber warns, indigo grounds) -->
-  <tr><td style="height:3px;line-height:3px;font-size:0;background:linear-gradient(90deg,#d4850a 0%,#a04c2a 34%,#6b3fa0 68%,#3b2d8b 100%)">&nbsp;</td></tr>
+  <tr><td bgcolor="#6b3fa0" style="height:3px;line-height:3px;font-size:0;background-color:#6b3fa0;background:linear-gradient(90deg,#d4850a 0%,#a04c2a 34%,#6b3fa0 68%,#3b2d8b 100%)">&nbsp;</td></tr>
 
   <!-- header: white wordmark + earned-status eyebrow -->
   <tr><td style="padding:34px 36px 0 36px">
     <img src="https://driiva.co.uk/brand/logo-wordmark-white-v3.png" width="128" alt="driiva" style="display:block;width:128px;max-width:44%;height:auto;border:0">
-    <div style="margin-top:24px;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.60)"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;vertical-align:middle;margin-right:9px;box-shadow:0 0 8px rgba(16,185,129,0.7)"></span>{{EYEBROW}}</div>
+    <div style="margin-top:24px;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:11.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.60)"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;vertical-align:middle;margin-right:9px;box-shadow:0 0 8px rgba(16,185,129,0.7)"></span>{{EYEBROW}}</div>
   </td></tr>
 
   <!-- headline: monochrome, Inter Tight, restrained -->
   <tr><td style="padding:16px 36px 0 36px">
     <h1 style="margin:0;font-family:'Inter Tight',Inter,-apple-system,sans-serif;font-size:30px;font-weight:700;letter-spacing:-0.035em;line-height:1.04;color:#fafafa">{{HEADLINE}}</h1>
-    <p style="margin:14px 0 0 0;font-family:Inter,-apple-system,sans-serif;font-size:16.5px;font-weight:400;line-height:1.6;letter-spacing:-0.005em;color:rgba(255,255,255,0.66)">{{SUBHEAD}}</p>
+    <p style="margin:14px 0 0 0;font-family:Inter,-apple-system,sans-serif;font-size:16.5px;font-weight:400;line-height:1.55;letter-spacing:-0.005em;color:rgba(255,255,255,0.66)">{{SUBHEAD}}</p>
   </td></tr>
 
   <!-- OPTIONAL instrument readout: tabular figures, colour earned only on a live signal.
        Duplicate/remove cells to taste; keep the hairline dividers. -->
   <tr><td style="padding:26px 36px 0 36px">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#12111f;border:1px solid rgba(255,255,255,0.07);border-radius:14px"><tbody><tr>
-      <td width="40%" style="padding:18px 20px;border-right:1px solid rgba(255,255,255,0.06)">
+      <td width="40%" style="padding:18px 14px;border-right:1px solid rgba(255,255,255,0.06)">
         <div style="font-family:'Inter Tight',sans-serif;font-size:23px;font-weight:700;color:#f8fafc;font-variant-numeric:tabular-nums;letter-spacing:-0.02em">{{STAT1_VALUE}}</div>
-        <div style="margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.46)"><span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#10b981;vertical-align:middle;margin-right:6px"></span>{{STAT1_LABEL}}</div>
+        <div style="margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.46)"><span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#10b981;vertical-align:middle;margin-right:6px"></span>{{STAT1_LABEL}}</div>
       </td>
-      <td width="30%" style="padding:18px 20px;border-right:1px solid rgba(255,255,255,0.06)">
+      <td width="30%" style="padding:18px 14px;border-right:1px solid rgba(255,255,255,0.06)">
         <div style="font-family:'Inter Tight',sans-serif;font-size:23px;font-weight:700;color:#f8fafc;font-variant-numeric:tabular-nums;letter-spacing:-0.02em">{{STAT2_VALUE}}</div>
-        <div style="margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.46)">{{STAT2_LABEL}}</div>
+        <div style="margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.46)">{{STAT2_LABEL}}</div>
       </td>
-      <td width="30%" style="padding:18px 20px">
+      <td width="30%" style="padding:18px 14px">
         <div style="font-family:'Inter Tight',sans-serif;font-size:23px;font-weight:700;color:#f8fafc;font-variant-numeric:tabular-nums;letter-spacing:-0.02em">{{STAT3_VALUE}}</div>
-        <div style="margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.46)">{{STAT3_LABEL}}</div>
+        <div style="margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.46)">{{STAT3_LABEL}}</div>
       </td>
     </tr></tbody></table>
   </td></tr>
@@ -99,20 +116,20 @@
        (NOT a unicode char - Gmail emoji-substitutes those). -->
   <tr><td style="padding:28px 36px 0 36px">
     <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8b8b9e"><span style="display:inline-block;width:5px;height:5px;background:#6b5fdc;border-radius:1px;vertical-align:middle;margin-right:10px"></span>{{SECTION_LABEL}}</div>
-    <p style="margin:11px 0 0 0;font-family:Inter,sans-serif;font-size:16.5px;line-height:1.65;color:rgba(255,255,255,0.68)">{{SECTION_BODY}}  <!-- emphasise with <strong style="color:#ededf0;font-weight:600">...</strong> --></p>
+    <p style="margin:11px 0 0 0;font-family:Inter,sans-serif;font-size:16.5px;line-height:1.6;color:rgba(255,255,255,0.68)">{{SECTION_BODY}}  <!-- emphasise with <strong style="color:#ededf0;font-weight:600">...</strong> --></p>
   </td></tr>
 
   <!-- OPTIONAL callout: single accent, left rule -->
   <tr><td style="padding:26px 36px 0 36px">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#12111f;border:1px solid rgba(255,255,255,0.07);border-left:2px solid #6b5fdc;border-radius:12px"><tbody><tr><td style="padding:16px 20px">
       <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8f86e6;margin-bottom:8px">{{CALLOUT_LABEL}}</div>
-      <p style="margin:0;font-family:Inter,sans-serif;font-size:16px;line-height:1.6;color:rgba(255,255,255,0.7)">{{CALLOUT_BODY}}</p>
+      <p style="margin:0;font-family:Inter,sans-serif;font-size:16.5px;line-height:1.55;color:rgba(255,255,255,0.7)">{{CALLOUT_BODY}}</p>
     </td></tr></tbody></table>
   </td></tr>
 
   <!-- footer -->
   <tr><td style="padding:28px 36px 32px 36px">
-    <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:18px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.06em;color:rgba(255,255,255,0.38);line-height:1.7">DRIIVA LTD &nbsp;&middot;&nbsp; telematics insurance for young UK drivers<br>{{FOOTER_NOTE}}</div>
+    <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:18px;font-family:'JetBrains Mono',monospace;font-size:14.5px;letter-spacing:0.06em;color:rgba(255,255,255,0.38);line-height:1.7">DRIIVA LTD &nbsp;&middot;&nbsp; telematics insurance for young UK drivers<br>{{FOOTER_NOTE}}</div>
   </td></tr>
 
  </tbody></table>

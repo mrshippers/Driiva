@@ -5,6 +5,237 @@
 
 ## Entries
 
+### 2026-09-14 - The rewards eligibility ticket was written against a brief that had already changed
+
+`nightly/2026-09-14`. Closes ROADMAP's "Rewards eligibility logic (Tesco/Halfords/Nectar thresholds
+based on overallSafetyScore)" under "Damoov & Feedback".
+
+- **Checked the ticket's own example first, per the standing rule.** The ticket names Tesco,
+  Halfords and Nectar as the reward vehicle. `RewardsTimeline.tsx`'s own header comment records Wave
+  0 (0c): those named partner vouchers and their cash values were removed from every tier because no
+  partnership with any of them exists, and the "Redeem Now" button's only effect had been a toast
+  apologising for that. Naming a partner Driiva has no deal with is exactly the kind of fabricated
+  claim this repo has shipped before and had to walk back - so re-adding the names to close this
+  ticket "as written" would have been the wrong fix, not the right one.
+- **The eligibility half the ticket actually cared about is real and live.** `rewards.tsx` computes
+  each tier's lock state from `drivingProfile.streakDays` and `Math.round(drivingProfile.currentScore)`
+  against thresholds that match what `RewardsTimeline.tsx` displays to the driver: day5 at 5 days +
+  score >= 60, day10 at 10 days + score >= 65, month3 at 90 days + score >= 70, anniversary at 365
+  days + score >= 70 (team_driiva is day-only, no score gate). That is a real score-threshold
+  eligibility function running in production, just gating a recognition milestone rather than a named
+  voucher.
+- **One real gap found while tracing this, left open rather than papered over.** `shared/firestore/engagement.ts`
+  declares `RewardMilestoneDocument` with a `status` of `locked | unlocked | claimed`, and
+  `RewardsTimeline.tsx` renders a `claimed` state with a redemption code. Nothing in `client/src` or
+  `functions/src` ever writes to `users/{userId}/rewardMilestones/{rewardId}` or reads it back - the
+  states array `rewards.tsx` builds only ever produces `unlocked` or `locked`. A reward can be earned
+  but can never be marked claimed. Not fixed here since it is new scope beyond this ticket, not
+  something this ticket asked for; noted in ROADMAP so it does not read as done.
+- **No code changed.** This was a verify-then-tick pass, not an implementation - ticking a
+  behaviourally-complete ticket that had drifted from its own wording would be worse than leaving it
+  open, so the roadmap entry records what shipped and what did not, rather than a bare checkbox.
+
+**Verified:** read `client/src/pages/rewards.tsx`, `client/src/components/RewardsTimeline.tsx`,
+`shared/firestore/engagement.ts` end to end; grepped the full tree for `Nectar`, `Halfords`, `Tesco`
+and `RewardMilestoneDocument` writers/readers to confirm the partner tie-in is gone by design and the
+claimed path is unwired, not just unseen by this search. No test suite run - no production code
+changed.
+
+### 2026-09-13 - The XGBoost ticket was asking for a model that had already been replaced
+
+`nightly/2026-09-13`. Closes ROADMAP's "XGBoost risk model wired to drivingProfile scores (next
+sprint)" under "Damoov & Feedback".
+
+- **Checked open PRs first.** `gh pr list` had #118 already fixing the admin monitoring TD-1
+  ticket and #119 already ticking the community pool calculation ticket as done-not-built - both
+  taken, skipped. The next unchecked, ungated ticket down was this one.
+- **Grepped for the ticket's own word before writing any code.** "XGBoost" turns up in exactly one
+  place with real logic behind it: `api/scoring_logic.py`, a rule-based penalty calculator its own
+  docstring calls a "mock XGBoost". Nothing in `package.json`, `vercel.json`, or
+  `.github/workflows/*.yml` calls into `api/main.py`; `.vercelignore` excludes it by name, and two
+  existing rebuild-audit docs (`docs/working/findings.md`, `docs/rebuild/audit-api-contracts.md`)
+  already record it as dead code nothing serves.
+- **The real wiring exists, just not as ML.** `functions/src/scoring/tripMetrics.ts` computes a
+  deterministic weighted score (speed 25%, braking 25%, accel 20%, cornering 20%, phone 10%) and
+  `functions/src/scheduled/damoovSync.ts` folds it into `drivingProfile.currentScore` on the user
+  doc - the goal the ticket names, risk scoring wired to `drivingProfile`, is live in production.
+  `ARCHITECTURE.md` section 5.4 already documents the deterministic scorer as the deliberate
+  current design and names a real ML/XGBoost layer as future work sitting on top of it, not a
+  decision anyone reversed.
+- **Ticked with a note rather than left open against dead code**, since re-implementing the mock
+  or leaving the box unchecked against something nothing calls would both misrepresent the state.
+  Raised the actual remaining gap as a follow-up: `api/main.py`, `api/__init__.py` and
+  `api/requirements.txt` are confirmed unreachable and worth deleting in their own ticket, and a
+  real trained ML model is a separate project (training data, hosting, inference latency), not a
+  reword.
+- **Verified:** documentation-only change, no source touched. `git diff --stat` shows only
+  `ROADMAP.md` and this file.
+
+### 2026-09-12 - Community pool calculation ticket was already done, just never ticked
+
+`nightly/2026-09-12`. Closes ROADMAP's "Community pool calculation using aggregated
+drivingProfile data" under "Damoov & Feedback".
+
+- **Checked the ticket's own symptom before touching anything.** The only other unblocked,
+  untaken tickets tonight were the Stripe checkout for premium payments, the premium amount
+  display on the policy page, and splitting `server/routes.ts` - all three already exist in the
+  code (`client/src/pages/checkout.tsx` + `create-subscription`/`create-checkout` in
+  `paymentRoutes.ts`, `policy.tsx` line 154, and `server/routes.ts` is 43 lines that only wire up
+  six already-split `server/http/*` modules). This one was the same shape: real, done, never
+  ticked.
+- **What actually does the calculation.** `functions/src/triggers/driverProfile.ts` rolls each
+  finished trip into the driver's `drivingProfile.currentScore` as a weighted average inside a
+  Firestore transaction, then `calculateRiskTier(newScore)` turns that aggregated score into a
+  risk tier on the same write. `functions/src/scheduled/pool.ts` finalises the monthly pool
+  period off the resulting `PoolShareDocument`s. Nothing here is a stub or a TODO - it is the same
+  code path `finalizePoolPeriod` and the pool trigger tests already exercise.
+- **No code changed.** Confirmed with `functions/src/__tests__/scheduled/pool.test.ts` and
+  `functions/src/__tests__/triggers`, 4 files, 55 passing, before ticking the box.
+- **Left `Rewards eligibility logic (Tesco/Halfords/Nectar thresholds based on
+  overallSafetyScore)` unchecked rather than closing it under the wrong shape.** The shipped
+  rewards system (`RewardsTimeline`, "Make It Polished") is day/milestone-based, not a
+  score-threshold ladder - a different design, not an unfinished one. That is a product call, not
+  a coding gap, so it stays open with a note instead of being ticked against work that doesn't
+  match it.
+
+**Tests:** `npx vitest run functions/src/__tests__/scheduled/pool.test.ts
+functions/src/__tests__/triggers` - 4 files, 55 passing. No source files touched, so this is
+confirmation the claim holds, not a regression check. `npm run gates` not run: nothing outside
+`ROADMAP.md`/`DRIIVA_CHANGELOG.md` changed.
+
+### 2026-09-11 - The admin monitoring page was publishing seven numbers nobody had measured
+
+`nightly/2026-09-11`. Closes ROADMAP's TD-1 under "Tech debt lifted out of code comments".
+
+- **The ticket undercounted, and named the wrong cause.** It said four fields render as hardcoded
+  zeros. Only one of the four ever reached the screen: `functionsInvocations` printed "0" under the
+  heading "Billable calls", because `(0).toLocaleString()` is the truthy string `"0"` and walked
+  straight through the `|| 'N/A'` meant to catch it. `avgLatencyMs` printed "N/A" by luck, a falsy
+  check catching a zero it was not written for, and `firestoreReads`/`firestoreWrites` were computed
+  on every load and never rendered anywhere. Fixing the four named lines would have left the page
+  lying.
+- **What was actually wrong, found by rendering it.** Both fetchers ended in `catch { return
+  ZEROS }`, a complete, well-formed object returned on failure - the same defect shape as the
+  `settle` timeout closed on 10 Sep, where success and give-up returned the same nothing. It matters
+  here because in production this page ALWAYS fails: it queries Firestore with the client SDK, and
+  `trips` reads are scoped to their owner while `aiUsageTracking` is `allow read, write: if false`
+  for every client including one with an admin-shaped claim, both already pinned in
+  `tests/rules/deny-by-design-and-catchall.test.ts`. Signed in as an admin against the QA emulator,
+  the pre-change page reported: Total Processed 0, Failed 0, Stuck 0, Avg Latency N/A, AI Spend today
+  and this month at zero pounds each, Function Invocations 0, and "Last Trip: Never". Seven values, a
+  fleet-wide claim among them, none of them a measurement.
+- **Fix, at the fetchers rather than at the seven call sites.** Both throw now. React Query surfaces
+  the error and each section renders an `Unreadable` panel carrying the real reason, which on the
+  same emulator run reads "Property userId is undefined on object. for 'list' @ L182" for the trip
+  pipeline and "false for 'list' @ L419" for AI spend - the rules lines that refused, on screen,
+  where they are useful. `retry: false` on both: a permission denial is a settled fact about the
+  rules and three backed-off retries only delay the page admitting it. "Last Trip" says "Unreadable"
+  instead of "Never", because "Never" is a claim about the fleet and must not be what a failed read
+  prints.
+- **The latency is a real measurement now, not a parsed log.** The ticket proposed scraping
+  `[metric] trip_pipeline` out of Cloud Logging. There was no need: `finalizeTripFromPoints` computes
+  `Date.now() - pipelineStartMs` and throws it away into that log line, so it now writes
+  `pipelineLatencyMs` in the same update that sets the trip's status, read once and used for both the
+  document and the log so the two can never drift. The page averages it over trips the SERVER
+  finalised only. That filter is the point: `firestore.rules` lets a driver create their own trip
+  document carrying any unmodelled field, so a latency on a trip they still control is a claim, but
+  `completed` is unreachable from the client's allowed transitions (recording -> processing |
+  failed), and the server writes the latency in the same update that sets it.
+- **Deleted rather than fixed.** `firestoreReads` and `firestoreWrites` are gone from `CostTracking`
+  entirely, and `functionsInvocations` with them: a shape that cannot hold a number cannot publish a
+  fake one. The invocations card stays on screen reading "Not measured - needs the Cloud Monitoring
+  API (ROADMAP TD-1)", deliberately outside the read-failure branch, because Cloud Monitoring is
+  missing whether or not Firestore answers and the two gaps are different. A fourth `MetricCard`
+  status, `unmeasured`, keeps a card with nothing behind it from being painted the same green as a
+  healthy reading; the word carries the meaning, the colour only stops it reading as a verdict.
+- **Not fixed, on purpose.** The page still cannot read anything in production. That needs admin
+  custom claims or a server endpoint, which is a decision, not a nightly. Raised as TD-6, with the
+  Cloud Monitoring credentials as TD-7. Loosening `firestore.rules` to make the page work was never
+  on the table.
+
+- **Caught in the 375px capture.** With the read-failure panel taking two of three columns, the
+  two-column mobile grid left the invocations card alone at half width with its value wrapped to
+  "Not / measured". The cost grid is single-column until `sm:` now. The same capture caught a
+  second, older defect and it is fixed too: `MobileMenuButton` is `fixed top-4 left-4` and sat
+  on top of the page title, so EVERY admin page rendered its heading truncated at 375px -
+  "Live Monitoring" read as "e Monitoring". Fixed once in `AdminLayout` (`pl-14 lg:pl-0` on the
+  title block) rather than on this page, so all six admin routes clear the button; desktop is
+  untouched above `lg`. Pinned by a ninth test that fails when the indent is removed.
+
+**Tests:** red first. `functions/src/__tests__/triggers/tripFinalisation.test.ts` (3) drives the real
+`finalizeTripFromPoints` and failed on the missing field and on the log disagreeing with the
+document; its third test passed from the start, pinning that finalisation is otherwise unchanged.
+`client/src/__tests__/admin-monitoring-metrics.test.tsx` (7) covers the averaging and its trust
+filter, then renders the real page with no Firestore and asserts the failure is named rather than
+printed as zeros. Two planted regressions, each failing only what it breaks: restoring the
+zero-object fallback fails the "names the failure" test alone, and putting a `0` back in the
+invocations card fails the invocations test alone. Full suite 110 files, 1222 passing, 2 skipped, 3
+todo. `npm run build` exit 0, `tsc --noEmit` clean. `npm run gates` green twice, DESIGN LAWS on 5 of
+5 routes and AXE 0 serious or critical across 14 of 14; `/admin/monitoring` is behind `AdminRoute`
+and in neither gate's route list, so it was checked by hand - the QA driver flipped to `isAdmin` in
+the emulator, then the page rendered at 756px and 1440px before and after the change, which is where
+the seven fabricated values above were read off the screen.
+
+---
+
+
+### 2026-09-10 - The gate was judging /leaderboard before the page had rendered at all
+
+`nightly/2026-09-10`. Closes ROADMAP's "The design-law gate intermittently measures an empty
+`/leaderboard`" under "Tech debt lifted out of code comments".
+
+- **Reproduced, then measured.** The first `npm run gates` of the night failed law 5 on
+  `/leaderboard` with "NO PROSE FOUND", the same one-run-in-three flake the ticket describes. Five
+  runs after that were green, so rather than chase it, every sample `settle` takes was logged for a
+  whole run. The frame that matters is `1:926:26:1:sk0`, and dumping the page at that moment gives
+  `{ text: "Home\nTrips\nRewards\nProfile", loader: true }`: `BrandedLoader` filling the screen,
+  with the only text on the page coming from the nav underneath it.
+- **What the ticket got wrong, and it is the useful half.** It assumed the route "is rendering empty
+  some of the time". It is not. The route had not rendered at all yet, and the gate measured it
+  anyway. That is the difference between a product bug and a gate bug, and it is a gate bug.
+- **Why `settle` let it through.** It asks two questions and both gave the wrong answer on that
+  frame. Is there text? Yes, 26 characters of nav labels. Are there skeletons? No, because
+  `BrandedLoader` draws a pulsing logo, not skeleton bars, and the skeleton selector was the only
+  loading state the gate knew about. Three such samples in a row, 750ms, and the laws run against a
+  blank screen. Every nav label is shorter than the 12 characters law 5 counts as prose, so law 5
+  reported a type-floor violation on a page it had never seen, and law 6 agreed there were "no
+  figures on this route" where a loaded `/leaderboard` has 63.
+- **Fix, at the shared function rather than at the route.** `BrandedLoader` now carries
+  `data-app-loading` and `settle` counts it as busy. That is one attribute and one selector entry,
+  and it covers every surface that loader serves - the Suspense fallback for all lazy routes and the
+  five `ProtectedRoute` gates - not just the route that happened to be caught. The selector is
+  exported as `BUSY_SELECTOR` so the gate and the app are held together by a test rather than by a
+  copied class name. Deliberately NOT fixed by waiting longer or by requiring a minimum text length:
+  a page is allowed to be terse, and both of those would have hidden the flake rather than closed it.
+- **The silent timeout, carried along because it is the same defect.** `settle` returned the same
+  nothing whether the page came to rest or it gave up after 20 seconds, so no caller could tell a
+  measurement from a timeout. It returns a boolean now and all three consumers check it: the design
+  laws, the axe audit and the marketing reduced-motion gate all record a page that never settled as
+  NOT REACHED, with the reason, instead of judging whatever is on screen. Without this, marking the
+  loader would have converted the flake into a 20s wait followed by the same wrong measurement.
+- **Held by** `tests/unit/qa-settle-busy.test.tsx` (9 tests). Two laws: every loading state the app
+  can show is busy to the gate, asserted by rendering the real `BrandedLoader` and the real
+  leaderboard skeletons through the real exported selector rather than grepping for a class name;
+  and `settle` reports whether it settled, driven through its real loop by a fake CDP client that
+  replays scripted samples, including the exact `926:26` frame from the failing run.
+
+**Tests:** red first, 8 of 9 failing for the right reasons, then green. Three planted violations,
+each failing only what it breaks: removing `data-app-loading` from `BrandedLoader` fails the loader
+law alone (1 of 9), removing `[data-app-loading]` from `BUSY_SELECTOR` fails the same one alone, and
+forcing `settle` to time out on every call turns the whole gate run into "DESIGN LAWS: INCOMPLETE,
+5 route(s) were never measured, so this is not a pass" plus 7 axe routes NOT REACHED, which is the
+reporting path this change adds. Full suite 108 files, 1212 passing, 2 skipped, 3 todo. `npm run
+build` exit 0. `tsc --noEmit` clean, and byte-identical before and after by diff.
+
+`npm run gates` ran for real nine times tonight, Chrome and the emulator both resolving in this
+clone. Once before the change, which is the run that went red on `/leaderboard` and gave us the
+reproduction; five more before the change, all green, which is what makes it a flake; and three
+after, all green, DESIGN LAWS on 5 of 5 routes and AXE 0 serious or critical across 14 of 14. The
+before-and-after evidence is one line rather than a pass rate: the identical frame, 926 elements and
+26 characters with the loader up, scored `sk0 empty=false` before this change and `sk1 empty=true`
+after it.
+
+---
 ### 2026-09-08 - The web recorder only noticed phone usage when the driver left the tab
 
 `nightly/2026-09-08`. Closes ROADMAP's TD-2 under "Tech debt lifted out of code comments".

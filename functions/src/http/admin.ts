@@ -8,7 +8,7 @@
  * requireSelf or requireAdmin for authorization (403 if not allowed).
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
 import { 
   COLLECTION_NAMES, 

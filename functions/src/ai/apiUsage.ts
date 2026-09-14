@@ -3,7 +3,7 @@
  * collection. Extracted verbatim from functions/src/ai/tripAnalysis.ts.
  */
 import { Timestamp } from 'firebase-admin/firestore';
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import {
   COLLECTION_NAMES,
   AIUsageTrackingDocument,

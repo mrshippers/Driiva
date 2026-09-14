@@ -28,7 +28,7 @@
  */
 
 import { FieldValue } from 'firebase-admin/firestore';
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import {
   COLLECTION_NAMES,
   TripDocument,

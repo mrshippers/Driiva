@@ -23,7 +23,6 @@ export default tseslint.config(
       "functions/**",
       "mobile/**",
       "apps/**",
-      "marketing-site/**",
       "driiva-design-system/**",
       "design-system/**",
       "hyperframes/**",

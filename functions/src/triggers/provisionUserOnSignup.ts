@@ -16,7 +16,7 @@
  * wrapper.
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { Timestamp, getFirestore } from 'firebase-admin/firestore';
 import { COLLECTION_NAMES } from '../types';
 import { EUROPE_LONDON } from '../lib/region';
