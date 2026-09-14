@@ -15,7 +15,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mockGet, mockUpdate } from '../setup';
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 
 vi.mock('../../utils/weather', () => ({
   getWeatherForTrip: vi.fn().mockResolvedValue('clear'),

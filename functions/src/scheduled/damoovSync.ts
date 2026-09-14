@@ -8,7 +8,7 @@
  * maxInstances: 10 - hard cap to prevent billing loops.
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
 import { EUROPE_LONDON } from '../lib/region';
 import { wrapTrigger } from '../lib/sentry';

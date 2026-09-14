@@ -5,7 +5,7 @@
  * Trigger: onUserOrPoolUpdate - keep estimate in sync when user or pool changes.
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { db } from '../index';
 import { COLLECTION_NAMES } from '../types';

@@ -12,11 +12,9 @@ const { mockFetch } = vi.hoisted(() => ({
   mockFetch: vi.fn(),
 }));
 
-vi.mock('node-fetch', () => ({
-  default: mockFetch,
-}));
+vi.stubGlobal('fetch', mockFetch);
 
-vi.mock('firebase-functions', () => ({
+vi.mock('firebase-functions/v1', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
