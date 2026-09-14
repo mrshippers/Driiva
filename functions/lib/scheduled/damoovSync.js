@@ -43,7 +43,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.syncDamoovTrips = void 0;
-const functions = __importStar(require("firebase-functions"));
+const functions = __importStar(require("firebase-functions/v1"));
 const firestore_1 = require("firebase-admin/firestore");
 const region_1 = require("../lib/region");
 const sentry_1 = require("../lib/sentry");

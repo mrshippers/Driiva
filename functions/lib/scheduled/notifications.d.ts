@@ -3,7 +3,7 @@
  * =======================
  * Sends weekly driving summary push notifications every Monday at 9am UK time.
  */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 /**
  * Send weekly driving summary to all active users.
  * Runs every Monday at 9:00 AM UK time.

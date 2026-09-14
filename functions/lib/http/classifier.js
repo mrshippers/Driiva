@@ -44,22 +44,21 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.batchClassifyTrips = exports.classifyTrip = void 0;
 exports.classifyCompletedTrip = classifyCompletedTrip;
-const functions = __importStar(require("firebase-functions"));
+const functions = __importStar(require("firebase-functions/v1"));
 const firestore_1 = require("firebase-admin/firestore");
-const node_fetch_1 = __importDefault(require("node-fetch"));
 const auth_1 = require("./auth");
 const types_1 = require("../types");
 const region_1 = require("../lib/region");
 const db = (0, firestore_1.getFirestore)();
 // Python classifier Cloud Function URL
 // Set via Firebase environment config: firebase functions:config:set classifier.url="https://..."
-const CLASSIFIER_URL = functions.config().classifier?.url || process.env.CLASSIFIER_URL;
+// functions.config() was removed in firebase-functions v7. CLASSIFIER_URL was
+// never set through it in production (docs/rebuild/audit-edges.md), so reading
+// the env var alone keeps today's behaviour: unset means the classifier no-ops.
+const CLASSIFIER_URL = process.env.CLASSIFIER_URL;
 /**
  * Convert TripPoints to classifier format
  */
@@ -85,7 +84,7 @@ async function callPythonClassifier(tripId, userId, points, settings) {
     }
     const startMs = Date.now();
     try {
-        const response = await (0, node_fetch_1.default)(`${CLASSIFIER_URL}/classify_trip`, {
+        const response = await fetch(`${CLASSIFIER_URL}/classify_trip`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

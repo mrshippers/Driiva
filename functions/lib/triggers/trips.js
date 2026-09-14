@@ -39,7 +39,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.onTripStatusChange = exports.onTripCreate = exports.updateDriverProfileAndPoolShare = exports.finalizeTripFromPoints = void 0;
-const functions = __importStar(require("firebase-functions"));
+const functions = __importStar(require("firebase-functions/v1"));
 const firestore_1 = require("firebase-admin/firestore");
 const weather_1 = require("../utils/weather");
 const types_1 = require("../types");

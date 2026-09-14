@@ -3,7 +3,7 @@
  * ==========================
  * Admin-only callable to seed achievement definitions into Firestore.
  */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 /**
  * Seed achievement definitions into the top-level `achievements` collection.
  * Callable by admin users only. Idempotent (overwrites existing docs by ID).

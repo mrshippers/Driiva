@@ -59,7 +59,7 @@ exports.addBreadcrumb = addBreadcrumb;
 exports.wrapFunction = wrapFunction;
 exports.wrapTrigger = wrapTrigger;
 const Sentry = __importStar(require("@sentry/node"));
-const functions = __importStar(require("firebase-functions"));
+const functions = __importStar(require("firebase-functions/v1"));
 const SENTRY_DSN = process.env.SENTRY_DSN_FUNCTIONS;
 let initialized = false;
 /**

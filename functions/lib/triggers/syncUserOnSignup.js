@@ -40,7 +40,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.syncUserOnSignup = void 0;
-const functions = __importStar(require("firebase-functions"));
+const functions = __importStar(require("firebase-functions/v1"));
 const neon_1 = require("../lib/neon");
 const region_1 = require("../lib/region");
 const sentry_1 = require("../lib/sentry");

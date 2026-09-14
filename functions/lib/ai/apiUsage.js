@@ -39,7 +39,7 @@ exports.trackAPIUsage = trackAPIUsage;
  * collection. Extracted verbatim from functions/src/ai/tripAnalysis.ts.
  */
 const firestore_1 = require("firebase-admin/firestore");
-const functions = __importStar(require("firebase-functions"));
+const functions = __importStar(require("firebase-functions/v1"));
 const types_1 = require("../types");
 const firestoreDb_1 = require("./firestoreDb");
 const config_1 = require("./config");

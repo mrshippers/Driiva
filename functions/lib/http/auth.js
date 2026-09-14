@@ -46,7 +46,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.requireAuth = requireAuth;
 exports.requireSelf = requireSelf;
 exports.requireAdmin = requireAdmin;
-const functions = __importStar(require("firebase-functions"));
+const functions = __importStar(require("firebase-functions/v1"));
 /** Message for unauthenticated requests (missing or expired token). */
 const UNAUTHENTICATED_MESSAGE = 'Authentication required. If you were signed in, your session may have expired - please sign in again.';
 /**
