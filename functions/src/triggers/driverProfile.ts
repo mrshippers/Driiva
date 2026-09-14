@@ -2,7 +2,7 @@
  * Rolling the finished trip into the driver's profile and their pool share,
  * transactionally. Extracted verbatim from functions/src/triggers/trips.ts.
  */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FieldValue } from 'firebase-admin/firestore';
 import { scoreWeight } from '@driiva/contracts';
 import {

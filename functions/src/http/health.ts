@@ -5,7 +5,7 @@
  * No auth required. Returns 200 when healthy, 503 when a dependency check fails.
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { getFirestore } from 'firebase-admin/firestore';
 import { COLLECTION_NAMES } from '../types';
 import { EUROPE_LONDON } from '../lib/region';

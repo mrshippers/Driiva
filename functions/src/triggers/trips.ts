@@ -4,7 +4,7 @@
  * Cloud Functions triggered by trip document changes.
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { getWeatherForTrip } from '../utils/weather';
 import {

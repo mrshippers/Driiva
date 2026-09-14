@@ -2,7 +2,7 @@
  * Step 3 of the trip analyser: the Claude call, its retry/backoff wrapper and
  * the two prompts. Extracted verbatim from functions/src/ai/tripAnalysis.ts.
  */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import {
   CLAUDE_MODEL,
   MAX_TOKENS,

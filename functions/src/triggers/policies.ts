@@ -9,7 +9,7 @@
  *   - On delete or cancelled/expired: clear users/{userId}.activePolicy
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { PolicyDocument, ActivePolicySummary, COLLECTION_NAMES } from '../types';
 import { EUROPE_LONDON } from '../lib/region';

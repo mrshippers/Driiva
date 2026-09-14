@@ -7,7 +7,7 @@
  * Open-Meteo archive API: https://open-meteo.com/en/docs/historical-weather-api
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 
 export type WeatherCondition = 'clear' | 'cloudy' | 'rain' | 'snow' | 'fog' | 'storm';
 

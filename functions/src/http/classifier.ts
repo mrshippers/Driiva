@@ -11,9 +11,8 @@
  * stops and trip segments.
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
-import fetch from 'node-fetch';
 import { requireAuth, requireAdmin } from './auth';
 import {
   COLLECTION_NAMES,
@@ -31,7 +30,10 @@ const db = getFirestore();
 
 // Python classifier Cloud Function URL
 // Set via Firebase environment config: firebase functions:config:set classifier.url="https://..."
-const CLASSIFIER_URL = functions.config().classifier?.url || process.env.CLASSIFIER_URL;
+// functions.config() was removed in firebase-functions v7. CLASSIFIER_URL was
+// never set through it in production (docs/rebuild/audit-edges.md), so reading
+// the env var alone keeps today's behaviour: unset means the classifier no-ops.
+const CLASSIFIER_URL = process.env.CLASSIFIER_URL;
 
 /**
  * Response from Python classifier

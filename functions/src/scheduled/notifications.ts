@@ -4,7 +4,7 @@
  * Sends weekly driving summary push notifications every Monday at 9am UK time.
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { getFirestore } from 'firebase-admin/firestore';
 import { COLLECTION_NAMES, UserDocument } from '../types';
 import { sendWeeklySummaryToUser } from '../utils/notifications';

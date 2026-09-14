@@ -14,7 +14,7 @@
  * setting the env var and resetting the module cache.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type * as functions from 'firebase-functions';
+import type * as functions from 'firebase-functions/v1';
 
 const { mockAddBreadcrumb, mockCaptureException, mockSetUser, mockFlush, mockInit } = vi.hoisted(() => ({
   mockAddBreadcrumb: vi.fn(),
@@ -32,7 +32,7 @@ vi.mock('@sentry/node', () => ({
   flush: mockFlush,
 }));
 
-vi.mock('firebase-functions', () => ({
+vi.mock('firebase-functions/v1', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),

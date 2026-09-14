@@ -25,7 +25,7 @@
  * quote from the `quotes/` collection.
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { COLLECTION_NAMES } from '../types';
 import { notifyPolicyConfirmed, notifyPolicyNotConfirmed } from '../utils/notifications';

@@ -121,10 +121,10 @@ vi.mock('firebase-admin/messaging', () => ({
   })),
 }));
 
-vi.mock('firebase-functions', () => {
+vi.mock('firebase-functions/v1', () => {
   // Shared so `functions.region(...)` and `functions.default.region(...)`
   // behave identically regardless of which interop path a trigger's
-  // `import * as functions from 'firebase-functions'` resolves through.
+  // `import * as functions from 'firebase-functions/v1'` resolves through.
   const region = vi.fn(function regionMock() {
     const builder = {
       runWith: vi.fn(() => builder),

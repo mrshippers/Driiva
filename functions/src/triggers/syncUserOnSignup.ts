@@ -5,7 +5,7 @@
  * This keeps users + onboarding_complete as single source of truth in PostgreSQL.
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { insertUserFromFirebase } from '../lib/neon';
 import { EUROPE_LONDON } from '../lib/region';
 import { wrapTrigger } from '../lib/sentry';

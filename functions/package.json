@@ -27,15 +27,13 @@
     "@neondatabase/serverless": "^0.10.4",
     "@sentry/node": "^10.70.0",
     "firebase-admin": "^12.7.0",
-    "firebase-functions": "^5.0.0",
-    "node-fetch": "^2.7.0",
+    "firebase-functions": "^7.3.2",
     "ws": "^8.18.3",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/node": "^26.4.1",
-    "@types/node-fetch": "^2.6.11",
+    "@types/node": "^26.5.1",
     "@types/ws": "^8.5.13",
     "@typescript-eslint/eslint-plugin": "^8.69.0",
     "@typescript-eslint/parser": "^8.69.0",

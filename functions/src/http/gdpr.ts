@@ -6,7 +6,7 @@
  * - deleteUserAccount: deletes all user data and Firebase Auth account.
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { DocumentReference, QueryDocumentSnapshot, getFirestore } from 'firebase-admin/firestore';
 import { COLLECTION_NAMES } from '../types';
 import { requireAuth, requireSelf } from './auth';

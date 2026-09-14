@@ -3,7 +3,7 @@
  * paged read that gets the points. Extracted verbatim from
  * functions/src/triggers/trips.ts.
  */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FieldValue } from 'firebase-admin/firestore';
 import * as Sentry from '@sentry/node';
 import {
