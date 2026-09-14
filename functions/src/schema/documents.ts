@@ -104,6 +104,20 @@ export interface TripDocument {
    * never write it.
    */
   clientReportedPhonePickupCount?: number;
+
+  /**
+   * How long finalizeTripFromPoints took, in milliseconds, written by the
+   * server in the same update that sets `status` (ROADMAP TD-1). Optional
+   * because every trip finalised before this landed, and every trip that
+   * failed, has no measurement rather than a zero.
+   *
+   * READ IT ONLY OFF A TRIP THE SERVER FINALISED. firestore.rules lets a
+   * client create its own trip document with any unmodelled field on it, so
+   * the field is only trustworthy on a doc whose status the client could not
+   * have set - `completed` is unreachable from the client's allowed
+   * transitions (recording -> processing | failed).
+   */
+  pipelineLatencyMs?: number;
 }
 
 /**
