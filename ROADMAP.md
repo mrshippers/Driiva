@@ -116,7 +116,7 @@ Three waves merged through `feat/fable-algo` and `feat/fable-trip` into `feat/fa
 - [x] Firestore security rules for feedback + systemLogs - *done: authenticated create on feedback; admin SDK only on systemLogs*
 - [ ] XGBoost risk model wired to drivingProfile scores (next sprint)
 - [ ] Community pool calculation using aggregated drivingProfile data
-- [ ] Rewards eligibility logic (Tesco/Halfords/Nectar thresholds based on overallSafetyScore)
+- [x] Rewards eligibility logic (Tesco/Halfords/Nectar thresholds based on overallSafetyScore) - *ticket predates the Wave 0 (0c) redesign and named the wrong shape. The eligibility logic it asked for is real and live: `client/src/pages/rewards.tsx` computes each tier's lock state from `drivingProfile.streakDays` and `Math.round(drivingProfile.currentScore)` against the same thresholds `RewardsTimeline.tsx` displays (day5 needs 5 days + score >= 60, day10 needs 10 days + score >= 65, month3 needs 90 days + score >= 70, anniversary needs 365 days + score >= 70). What the ticket named - Tesco/Halfords/Nectar as the reward - was deliberately removed in Wave 0 (0c, see `RewardsTimeline.tsx` header comment): no partnership with any of those three exists, so naming them was a fabricated claim, not a feature to build. Recognition milestones replaced them. Not closing this ticket by matching the letter of a stale brief - see `DRIIVA_CHANGELOG.md` for the full trace, including the one real gap this pass found: `RewardMilestoneDocument`/`claimed` status is declared in `shared/firestore/engagement.ts` but nothing writes or reads it, so a reward can never move past 'unlocked' today.*
 
 ## Sprint: "Make It Real" (Week 1–2)
 
