@@ -5,7 +5,7 @@
  * - exportUserData: returns all user data as JSON (for download).
  * - deleteUserAccount: deletes all user data and Firebase Auth account.
  */
-import * as functions from 'firebase-functions/v1';
+import * as functions from 'firebase-functions';
 /**
  * Export all user data for GDPR data portability.
  * Authenticated user must request their own userId.

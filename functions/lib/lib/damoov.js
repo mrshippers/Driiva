@@ -41,11 +41,15 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createDamoovUser = createDamoovUser;
 exports.fetchDamoovTrips = fetchDamoovTrips;
 exports.fetchDamoovDailyStats = fetchDamoovDailyStats;
-const functions = __importStar(require("firebase-functions/v1"));
+const functions = __importStar(require("firebase-functions"));
+const node_fetch_1 = __importDefault(require("node-fetch"));
 const DAMOOV_USER_API = 'https://user.telematicssdk.com/v1';
 const DAMOOV_DATAHUB_API = 'https://api.telematicssdk.com/indicators/v2';
 function getCredentials() {
@@ -63,7 +67,7 @@ function getCredentials() {
 async function createDamoovUser(uid, email) {
     try {
         const { instanceId, instanceKey } = getCredentials();
-        const res = await fetch(`${DAMOOV_USER_API}/registration`, {
+        const res = await (0, node_fetch_1.default)(`${DAMOOV_USER_API}/registration`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -76,7 +80,7 @@ async function createDamoovUser(uid, email) {
                 FirstName: '',
                 LastName: '',
             }),
-            signal: AbortSignal.timeout(10000),
+            timeout: 10000,
         });
         if (!res.ok) {
             functions.logger.warn(`Damoov user creation HTTP ${res.status} for ${uid}`);
@@ -107,7 +111,7 @@ async function createDamoovUser(uid, email) {
 async function fetchDamoovTrips(deviceToken, startDate, endDate) {
     try {
         const { instanceId, instanceKey } = getCredentials();
-        const res = await fetch(`${DAMOOV_DATAHUB_API}/Scores/trips?` +
+        const res = await (0, node_fetch_1.default)(`${DAMOOV_DATAHUB_API}/Scores/trips?` +
             `StartDate=${encodeURIComponent(startDate)}&` +
             `EndDate=${encodeURIComponent(endDate)}`, {
             method: 'GET',
@@ -117,7 +121,7 @@ async function fetchDamoovTrips(deviceToken, startDate, endDate) {
                 'InstanceId': instanceId,
                 'InstanceKey': instanceKey,
             },
-            signal: AbortSignal.timeout(30000),
+            timeout: 30000,
         });
         if (!res.ok) {
             functions.logger.warn(`Damoov trips fetch HTTP ${res.status}`, {
@@ -146,7 +150,7 @@ async function fetchDamoovTrips(deviceToken, startDate, endDate) {
 async function fetchDamoovDailyStats(deviceToken, startDate, endDate) {
     try {
         const { instanceId, instanceKey } = getCredentials();
-        const res = await fetch(`${DAMOOV_DATAHUB_API}/Scores/daily?` +
+        const res = await (0, node_fetch_1.default)(`${DAMOOV_DATAHUB_API}/Scores/daily?` +
             `StartDate=${encodeURIComponent(startDate)}&` +
             `EndDate=${encodeURIComponent(endDate)}`, {
             method: 'GET',
@@ -156,7 +160,7 @@ async function fetchDamoovDailyStats(deviceToken, startDate, endDate) {
                 'InstanceId': instanceId,
                 'InstanceKey': instanceKey,
             },
-            signal: AbortSignal.timeout(15000),
+            timeout: 15000,
         });
         if (!res.ok)
             return [];

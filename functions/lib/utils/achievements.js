@@ -42,7 +42,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ACHIEVEMENT_DEFINITIONS = void 0;
 exports.checkAndUnlockAchievements = checkAndUnlockAchievements;
 const firestore_1 = require("firebase-admin/firestore");
-const functions = __importStar(require("firebase-functions/v1"));
+const functions = __importStar(require("firebase-functions"));
 const contracts_1 = require("@driiva/contracts");
 const types_1 = require("../types");
 const db = (0, firestore_1.getFirestore)();

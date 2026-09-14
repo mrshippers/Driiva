@@ -8,7 +8,7 @@
  * - Expired tokens: Firebase does not populate context.auth, so we return
  *   a message that asks the user to sign in again.
  */
-import * as functions from 'firebase-functions/v1';
+import * as functions from 'firebase-functions';
 export type CallableContext = functions.https.CallableContext;
 /**
  * Require an authenticated user.

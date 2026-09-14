@@ -45,7 +45,7 @@ exports.checkAchievementsAsync = checkAchievementsAsync;
  * never fails the trip write. Extracted verbatim from
  * functions/src/triggers/trips.ts.
  */
-const functions = __importStar(require("firebase-functions/v1"));
+const functions = __importStar(require("firebase-functions"));
 const firestore_1 = require("firebase-admin/firestore");
 const types_1 = require("../types");
 const achievements_1 = require("../utils/achievements");

@@ -55,7 +55,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RootHttpAdapter = void 0;
 exports.resolveCurrency = resolveCurrency;
 exports.getRootConfig = getRootConfig;
-const functions = __importStar(require("firebase-functions/v1"));
+const functions = __importStar(require("firebase-functions"));
 // ============================================================================
 // CURRENCY SEAM
 // ============================================================================

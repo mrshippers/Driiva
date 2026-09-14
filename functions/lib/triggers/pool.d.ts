@@ -3,7 +3,7 @@
  * ===================
  * Cloud Functions triggered by pool share document changes.
  */
-import * as functions from 'firebase-functions/v1';
+import * as functions from 'firebase-functions';
 /**
  * Triggered when a pool share is created or updated
  * Syncs pool share summary to user document

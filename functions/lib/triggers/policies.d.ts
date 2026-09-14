@@ -8,6 +8,6 @@
  *     users/{userId}.activePolicy
  *   - On delete or cancelled/expired: clear users/{userId}.activePolicy
  */
-import * as functions from 'firebase-functions/v1';
+import * as functions from 'firebase-functions';
 export declare const onPolicyWrite: functions.CloudFunction<functions.Change<functions.firestore.DocumentSnapshot>>;
 //# sourceMappingURL=policies.d.ts.map

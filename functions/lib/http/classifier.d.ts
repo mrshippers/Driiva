@@ -10,7 +10,7 @@
  * This TypeScript function calls it after trip finalization to detect
  * stops and trip segments.
  */
-import * as functions from 'firebase-functions/v1';
+import * as functions from 'firebase-functions';
 import { TripDocument } from '../types';
 /**
  * Classify a completed trip

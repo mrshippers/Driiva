@@ -24,7 +24,7 @@
  * the typed RootAdapter interface in ./rootAdapter - see that file for the
  * seam. This file owns the callable functions and Firestore glue only.
  */
-import * as functions from 'firebase-functions/v1';
+import * as functions from 'firebase-functions';
 /**
  * Generate an insurance quote based on the user's driving score.
  *

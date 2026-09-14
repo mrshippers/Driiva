@@ -38,7 +38,7 @@ exports.updateDriverProfileAndPoolShare = updateDriverProfileAndPoolShare;
  * Rolling the finished trip into the driver's profile and their pool share,
  * transactionally. Extracted verbatim from functions/src/triggers/trips.ts.
  */
-const functions = __importStar(require("firebase-functions/v1"));
+const functions = __importStar(require("firebase-functions"));
 const firestore_1 = require("firebase-admin/firestore");
 const contracts_1 = require("@driiva/contracts");
 const types_1 = require("../types");

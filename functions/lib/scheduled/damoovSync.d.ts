@@ -7,6 +7,6 @@
  *
  * maxInstances: 10 - hard cap to prevent billing loops.
  */
-import * as functions from 'firebase-functions/v1';
+import * as functions from 'firebase-functions';
 export declare const syncDamoovTrips: functions.CloudFunction<unknown>;
 //# sourceMappingURL=damoovSync.d.ts.map

@@ -17,7 +17,7 @@
  *   // Manual capture:
  *   captureError(error, { tripId, userId });
  */
-import * as functions from 'firebase-functions/v1';
+import * as functions from 'firebase-functions';
 /**
  * Initialize Sentry for Cloud Functions.
  * Safe to call multiple times - only initializes once.

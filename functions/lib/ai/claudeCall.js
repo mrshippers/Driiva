@@ -39,7 +39,7 @@ exports.callClaude = callClaude;
  * Step 3 of the trip analyser: the Claude call, its retry/backoff wrapper and
  * the two prompts. Extracted verbatim from functions/src/ai/tripAnalysis.ts.
  */
-const functions = __importStar(require("firebase-functions/v1"));
+const functions = __importStar(require("firebase-functions"));
 const config_1 = require("./config");
 const numeric_1 = require("./numeric");
 // ---------------------------------------------------------------------------

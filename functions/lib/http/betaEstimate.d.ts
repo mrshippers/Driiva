@@ -4,7 +4,7 @@
  * Callable: calculateBetaEstimateForUser - recompute and write beta pricing doc.
  * Trigger: onUserOrPoolUpdate - keep estimate in sync when user or pool changes.
  */
-import * as functions from 'firebase-functions/v1';
+import * as functions from 'firebase-functions';
 /**
  * Recompute beta estimate for a user and write to users/{userId}/betaPricing/currentEstimate.
  * Callable by the authenticated user for their own userId (or pass no arg = use context.auth.uid).

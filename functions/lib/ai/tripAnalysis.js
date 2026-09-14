@@ -63,7 +63,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.analyzeTrip = analyzeTrip;
 const firestore_1 = require("firebase-admin/firestore");
-const functions = __importStar(require("firebase-functions/v1"));
+const functions = __importStar(require("firebase-functions"));
 const types_1 = require("../types");
 const firestoreDb_1 = require("./firestoreDb");
 const config_1 = require("./config");

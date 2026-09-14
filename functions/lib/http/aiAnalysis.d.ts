@@ -6,7 +6,7 @@
  * - analyzeTripAI: Re-analyze a single trip (authenticated users)
  * - getAIInsights: Fetch AI insights for a trip (authenticated users)
  */
-import * as functions from 'firebase-functions/v1';
+import * as functions from 'firebase-functions';
 /**
  * Callable: Re-analyze a trip with Claude AI
  *

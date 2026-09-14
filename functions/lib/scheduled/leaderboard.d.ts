@@ -3,7 +3,7 @@
  * ===============================
  * Scheduled functions to update leaderboard rankings.
  */
-import * as functions from 'firebase-functions/v1';
+import * as functions from 'firebase-functions';
 /**
  * Update all leaderboards every 15 minutes
  */
