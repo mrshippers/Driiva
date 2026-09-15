@@ -73,7 +73,7 @@ interface MockResponse {
 function makeRes(): MockResponse {
   const res = {
     _statusCode: 200,
-    _body: null,
+    _body: null as unknown,
     status(code: number) { this._statusCode = code; return this; },
     json(data: unknown) { this._body = data; return this; },
   };

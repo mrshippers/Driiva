@@ -22,10 +22,7 @@ function provisioned() {
     email: 'driver@example.com',
     displayName: 'Test Driver',
     isAdmin: false,
-    policyId: 'policy_uid-1',
-    policyNumber: 'DRV-0001',
     now: ts as never,
-    renewalDate: ts as never,
   });
 }
 

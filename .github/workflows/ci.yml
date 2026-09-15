@@ -38,6 +38,14 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
+      # tsconfig.json excludes **/*.test.ts, so the test files were the one
+      # part of the repo no type gate ever read: a real error in
+      # server/__tests__/api.test.ts survived on main with CI green. This
+      # checks them under the same compiler options. See tsconfig.test.json
+      # for what it covers and what compiles elsewhere.
+      - name: Type check (tests)
+        run: npm run check:tests
+
       # The web design laws need a browser and a dev server, so they cannot run
       # here. The mobile laws are a static source lint for exactly that reason.
       - name: Mobile design laws

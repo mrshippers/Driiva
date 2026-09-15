@@ -33,7 +33,7 @@ const { fsMock } = vi.hoisted(() => {
         // doc(db, collectionName, id) or doc(collectionRef, id)
         return { id: String(args[args.length - 1]), __path: args.slice(1).join("/") };
       }),
-      setDoc: vi.fn(async () => undefined),
+      setDoc: vi.fn(async (..._args: unknown[]) => undefined),
       addDoc: vi.fn(async () => ({ id: "added" })),
       writeBatch: vi.fn(() => batch),
       serverTimestamp: vi.fn(() => "SERVER_TS"),

@@ -1,0 +1,24 @@
+{
+  // tsconfig.json excludes "**/*.test.ts", so nothing typechecked the test
+  // files: a real error in server/__tests__/api.test.ts (a `null`-inferred
+  // field assigned `unknown`) sat on main with every gate green. This config
+  // typechecks the test files of the root project - the same roots
+  // tsconfig.json itself compiles - and runs in CI beside `tsc`.
+  //
+  // Deliberately NOT covered here, because they compile under their own
+  // tsconfig and checking them with the root's options reports config
+  // mismatches rather than real defects: functions/src/__tests__
+  // (functions/tsconfig.json, which excludes them), mobile/, apps/marketing/,
+  // and tests/ (mobile imports plus a second firebase-admin copy).
+  "extends": "./tsconfig.json",
+  "include": [
+    "client/src/**/*.test.ts",
+    "client/src/**/*.test.tsx",
+    "client/src/__tests__/**/*",
+    "server/**/*.test.ts",
+    "shared/**/*.test.ts",
+    "api/**/*.test.ts",
+    "packages/*/src/**/*.test.ts"
+  ],
+  "exclude": ["node_modules", "build", "dist"]
+}
