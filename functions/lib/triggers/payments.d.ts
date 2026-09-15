@@ -24,7 +24,7 @@
  * implemented in the checkout flow, this function uses the most recent open
  * quote from the `quotes/` collection.
  */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 /**
  * Trigger: fires when a pendingPayment document is created/updated.
  * Path: users/{userId}/pendingPayments/{subscriptionId}

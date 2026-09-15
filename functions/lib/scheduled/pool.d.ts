@@ -3,7 +3,7 @@
  * ========================
  * Scheduled functions for community pool management.
  */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 /**
  * Finalize pool period on the 1st of each month
  * - Mark all shares as finalized

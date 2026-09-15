@@ -46,7 +46,7 @@ exports.notifyPolicyNotConfirmed = notifyPolicyNotConfirmed;
 exports.sendWeeklySummaryToUser = sendWeeklySummaryToUser;
 const firestore_1 = require("firebase-admin/firestore");
 const messaging_1 = require("firebase-admin/messaging");
-const functions = __importStar(require("firebase-functions"));
+const functions = __importStar(require("firebase-functions/v1"));
 const types_1 = require("../types");
 const db = (0, firestore_1.getFirestore)();
 async function getUserTokens(userId) {

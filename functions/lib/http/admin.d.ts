@@ -7,7 +7,7 @@
  * All callables use shared auth: requireAuth (401 if missing/expired token),
  * requireSelf or requireAdmin for authorization (403 if not allowed).
  */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 /**
  * Initialize community pool (admin only)
  * Call this once to set up the pool document

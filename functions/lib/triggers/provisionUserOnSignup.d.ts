@@ -15,7 +15,7 @@
  * integration test (M1 T5) can drive them directly without the trigger
  * wrapper.
  */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 /**
  * Async handler for the Auth `onCreate` event: writes `users/{uid}`,
  * `usernames/{localPart}`, the default `policies/{...}` doc, and registers

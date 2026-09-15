@@ -40,7 +40,7 @@ exports.readTripPoints = readTripPoints;
  * paged read that gets the points. Extracted verbatim from
  * functions/src/triggers/trips.ts.
  */
-const functions = __importStar(require("firebase-functions"));
+const functions = __importStar(require("firebase-functions/v1"));
 const firestore_1 = require("firebase-admin/firestore");
 const Sentry = __importStar(require("@sentry/node"));
 const types_1 = require("../types");
@@ -109,9 +109,17 @@ async function finalizeTripFromPoints(tripId, tripData) {
         // 5. Determine final status
         const finalStatus = anomalies.flaggedForReview ? 'processing' : 'completed';
         // 6. Update trip document with computed metrics
+        //
+        // The latency is read ONCE, here, and then both stored and logged. It is
+        // measured to the point of the write rather than after it, so it excludes
+        // the write itself; a second Date.now() for the log line would differ from
+        // the stored number by however long Firestore took, and two surfaces would
+        // then report one measurement differently with nothing to catch it.
+        const pipelineLatencyMs = Date.now() - pipelineStartMs;
         const tripRef = db_1.db.collection(types_1.COLLECTION_NAMES.TRIPS).doc(tripId);
         await tripRef.update({
             // Computed metrics
+            pipelineLatencyMs,
             distanceMeters: metrics.distanceMeters,
             durationSeconds: metrics.durationSeconds,
             score: metrics.score,
@@ -140,7 +148,7 @@ async function finalizeTripFromPoints(tripId, tripData) {
             metric: 'trip_pipeline',
             tripId,
             success: true,
-            latencyMs: Date.now() - pipelineStartMs,
+            latencyMs: pipelineLatencyMs,
             pointCount: points.length,
             distanceMeters: metrics.distanceMeters,
             durationSeconds: metrics.durationSeconds,
