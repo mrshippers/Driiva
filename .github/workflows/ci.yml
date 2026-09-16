@@ -314,90 +314,28 @@ jobs:
             playwright-report/
             dev-server.log
           retention-days: 7
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Deploy to Staging: REMOVED 16 Sep 2026.
+  #
+  # It ran on every push to main and failed every time on
+  # "Authentication Error: Your credentials are no longer valid" - FIREBASE_TOKEN
+  # is a CLI user token last set 2 Mar 2026 and long expired. It has therefore
+  # never deployed anything, while making main CI red on every push and training
+  # everyone to read a red tick as normal.
+  #
+  # It cannot simply be re-credentialed the way production was: the driiva
+  # service account reads project driiva (HTTP 200) but gets 403 on
+  # driiva-staging, and both workflows still carry the original
+  # "TODO: Create staging Firebase project" note, so the target may never have
+  # been created.
+  #
+  # To restore it: create (or grant access to) driiva-staging, give
+  # firebase-adminsdk-fbsvc@driiva.iam.gserviceaccount.com the same roles it
+  # holds on driiva, then copy the production deploy step below, which is
+  # headless via FIREBASE_SERVICE_ACCOUNT_DRIIVA, and point it at
+  # --project staging. Do not reintroduce FIREBASE_TOKEN.
+  # ═══════════════════════════════════════════════════════════════════════════
 
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    # e2e is deliberately NOT in this list. It runs against DATABASE_URL
-    # localhost:5432/ci_placeholder and a staging Firebase project with
-    # email/password sign-in disabled, so it is red on every run including
-    # main (31 failed / 19 passed, unchanged for weeks) and one of its own
-    # tests is named "STAGING REALITY: signup is impossible". A gate that is
-    # red on everything carries no signal, and this one had silently blocked
-    # every Cloud Functions deploy: deploy-staging has been "skipped" on all
-    # of them. The six gates below do carry signal and still block.
-    needs: [lint-and-typecheck, build, functions-build, test, packages, rules-emulator]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    env:
-      # ── Staging Firebase config (from GitHub Secrets) ────────────────────
-      # The *_STAGING set, matching `--project staging` below. The unsuffixed
-      # secrets are production: building the staging client from them shipped a
-      # bundle pointed at production auth while the rules and functions beside
-      # it went to driiva-staging.
-      VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY_STAGING }}
-      VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN_STAGING }}
-      VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID_STAGING }}
-      VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET_STAGING }}
-      VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID_STAGING }}
-      VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID_STAGING }}
-      VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID_STAGING }}
-      VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
-      VITE_FEATURE_AI_INSIGHTS: "true"
-      VITE_FEATURE_COMMUNITY_POOL: "true"
-      VITE_FEATURE_LEADERBOARD: "true"
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install root dependencies
-        run: npm ci
-
-      - name: Install functions dependencies
-        run: npm ci
-        working-directory: functions
-
-      - name: Build Cloud Functions
-        run: npm run build
-        working-directory: functions
-
-      # Build client with staging Firebase config (VITE_* vars injected above)
-      - name: Build client (staging)
-        run: npm run build:staging
-
-      # ── Firebase ──────────────────────────────────────────────────────────
-      # Deploys Firestore rules, indexes, and Cloud Functions to driiva-staging.
-      # Requires: FIREBASE_TOKEN secret set in GitHub → Settings → Secrets.
-      # Cloud Functions require the driiva-staging project to be on the Blaze plan.
-      # If not yet upgraded, change --only to: firestore:rules,firestore:indexes
-      # TODO: Create staging Firebase project and add FIREBASE_TOKEN to GitHub Secrets
-      - name: Deploy Firebase to staging
-        run: |
-          npx firebase deploy \
-            --only firestore:rules,firestore:indexes,functions \
-            --project staging \
-            --non-interactive
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-
-      # ── Vercel ────────────────────────────────────────────────────────────
-      # Deploys the pre-built client + Express serverless function to Vercel.
-      # Requires these GitHub Secrets:
-      #   VERCEL_TOKEN            : from vercel.com/account/tokens
-      #   VERCEL_ORG_ID           : from .vercel/project.json or Vercel dashboard
-      #   VERCEL_PROJECT_ID_STAGING : Vercel project ID for the staging project
-      # Runtime env vars (DATABASE_URL, ANTHROPIC_API_KEY etc.) must be set in
-      # the Vercel staging project's Environment Variables settings.
-      # TODO: Create staging Firebase project and add FIREBASE_TOKEN to GitHub Secrets
-      - name: Deploy to Vercel (staging)
-        run: npx vercel --prod --token "$VERCEL_TOKEN" --yes
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_STAGING }}
 
   # ═══════════════════════════════════════════════════════════════════════════
   # PRODUCTION DEPLOY
@@ -413,7 +351,8 @@ jobs:
   #
   # Required GitHub Secrets (set in the "production" environment):
   #   VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID_PRODUCTION
-  #   FIREBASE_TOKEN (for deploying rules + functions to production Firebase)
+  #   FIREBASE_SERVICE_ACCOUNT_DRIIVA (service account JSON: rules, indexes,
+  #     functions to production Firebase; headless, replaces the expired FIREBASE_TOKEN)
   #   All VITE_FIREBASE_* vars for the production Firebase project
   #   VITE_SENTRY_DSN (production Sentry DSN)
   # ═══════════════════════════════════════════════════════════════════════════
