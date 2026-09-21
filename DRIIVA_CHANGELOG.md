@@ -5,6 +5,33 @@
 
 ## Entries
 
+### 2026-09-21 - The routes split had shipped two weeks ago and never ticked its own ticket
+
+`nightly/2026-09-21`. Closes ROADMAP's "Split `server/routes.ts` into domain-specific route
+modules" under "Code Quality & UX Fixes".
+
+- **Checked open PRs first.** #131 already ticks the premium-display ticket, so that one is taken
+  and skipped. Every ticket in the September tech-debt sprint (TD-3 to TD-7) names a credential or
+  a decision it is waiting on, which is why the last four nights were quiet. This was the first
+  unchecked ticket down that is neither taken nor gated.
+- **Checked the symptom before writing any code.** `server/routes.ts` is 43 lines. `bee3ef3`
+  (7 Sep) took it from 1520 and moved the handlers to `server/http/`, one module per group:
+  `authRoutes`, `driverRoutes`, `communityRoutes`, `aiRoutes`, `paymentRoutes`, `webhookRoutes`,
+  plus `stripeIntegration`, `stripePrices` and `leaderboardCache`. The largest is 364 lines, under
+  the 500-line ceiling. No `app.get/post/put/delete` is left in `routes.ts` apart from the health
+  check. There was nothing left to split.
+- **Removed three duplicate lines from "Damoov & Feedback".** The community pool, rewards
+  eligibility and XGBoost tickets each appeared twice, once ticked with its note (#119, #120, #129)
+  and once as a bare unchecked line the merges left behind. The bare copies are gone so the next
+  run does not pick up a ticket that is already closed. The longer unchecked rewards line that asks
+  for a product call is a different note and stays.
+- **No code changed.** ROADMAP and this file only.
+
+**Verified:** read `server/routes.ts` end to end, `wc -l server/http/*.ts`, grepped `server/` for
+route handlers registered outside `server/http/`, and ran the server test suite
+(`npx vitest run server`): 14 files, 114 tests, all passing. `npm run gates` not run, since
+nothing it measures changed.
+
 ### 2026-09-15 - The premium display ticket was already shipped on both surfaces
 
 `nightly/2026-09-15`. Closes ROADMAP's "Add premium amount display on policy page" under "Make It
