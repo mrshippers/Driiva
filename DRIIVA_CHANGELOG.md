@@ -32,6 +32,29 @@ route handlers registered outside `server/http/`, and ran the server test suite
 (`npx vitest run server`): 14 files, 114 tests, all passing. `npm run gates` not run, since
 nothing it measures changed.
 
+### 2026-09-15 - The premium display ticket was already shipped on both surfaces
+
+`nightly/2026-09-15`. Closes ROADMAP's "Add premium amount display on policy page" under "Make It
+Payable".
+
+- **Checked open PRs first.** `gh pr list --state open` shows only `#50` (Wave I brand, an unrelated
+  draft recovered from an old worktree) - nothing touches the policy page.
+- **Checked the ticket's own symptom before writing anything, per the standing rule.** The ticket
+  reads as if the policy page shows no premium figure. `client/src/pages/policy.tsx` has rendered a
+  real "Annual Premium" row since the Wave G policy-terms pass (`9b6fbae`): `premiumCents` comes from
+  `policy.currentPremiumCents` or `userDoc.activePolicy.premiumCents`, formatted through
+  `formatCurrency`, with a skeleton while loading and an em-dash when there is genuinely no premium to
+  show, no hardcoded figure anywhere in the file. The refund-cap fix (`7d11cc0`) touched the same
+  function and left it in place. `mobile/app/policy.tsx` carries the mobile twin: a `DetailRow`
+  labelled "Premium" from `formatPounds(policy.premiumCents)`, only rendered when the field is a
+  number.
+- **No code changed.** Ticking a shipped feature under new code would be padding a diff, not doing
+  the ticket; the roadmap entry records which commits already closed it instead of a bare checkbox.
+
+**Verified:** read `client/src/pages/policy.tsx` and `mobile/app/policy.tsx` end to end; `git log` on
+`policy.tsx` confirms the premium row predates tonight by weeks (`9b6fbae`, `7d11cc0`). No test suite
+run - no production code changed.
+
 ### 2026-09-14 - The rewards eligibility ticket was written against a brief that had already changed
 
 `nightly/2026-09-14`. Closes ROADMAP's "Rewards eligibility logic (Tesco/Halfords/Nectar thresholds
