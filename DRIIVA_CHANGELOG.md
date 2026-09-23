@@ -5,6 +5,39 @@
 
 ## Entries
 
+### 2026-09-22 - The Express API has an OpenAPI spec, and a test that keeps it honest
+
+`nightly/2026-09-22`. Closes ROADMAP's "Add OpenAPI documentation for Express API" under "Code
+Quality & UX Fixes".
+
+- **`docs/api/openapi.json`** documents all 38 `/api` operations `server/routes.ts` registers across
+  the six `server/http/*Routes.ts` modules, plus `/api/health`. It has bearer auth (Firebase ID
+  token), path and query parameters, the body fields each handler actually reads, the rate limiters
+  and owner/admin guards in each description, and the status codes each handler can return. JSON
+  rather than YAML because neither YAML parser is a direct dependency, and adding one for a docs file
+  was not worth it.
+- **Response bodies are deliberately left as open objects.** The handlers return storage rows with
+  no typed contract. Writing field-level schemas by hand would make a second source of truth that
+  nothing checks, and it would drift the first time a column changes.
+- **`server/__tests__/openapi-coverage.test.ts` holds the spec to the running app.** It boots
+  `server/app.ts` on the existing characterisation rig and walks the Express router itself rather
+  than grepping source. So a route added in any module or style, a route removed, or a route
+  gaining or losing `requireAuth` fails the suite until the spec matches. Grepping source would
+  have missed routes registered in other styles.
+- **Found while picking the ticket, left for Jamal:** the first unchecked ticket, "Build Stripe
+  checkout", is built but not safe to tick. `create-subscription` charges any client-supplied
+  `annualPremiumCents` between 10000 and 500000 without recomputing it or checking it against the
+  Root quote. That is pricing, a guarded area for this job, so it is written onto the ticket and
+  not fixed.
+
+**Verified:** red first (spec file missing), then green, 3/3. Mutation check: deleting
+`/api/ask` from the spec and removing `/api/ai/coach`'s security made both assertions fail with the
+exact routes named, and restoring the spec made them pass again. `tsc` exits 0. Full vitest suite, run
+twice under heavy machine load: 7 then 3 timeouts, a different set each run, all in files this change
+cannot reach (`qa-settle-busy`, `empty-state-error`, `refund.properties`). Those three plus the new
+test pass 32/32 run on their own. ESLint cannot run on this clone at all (typescript-eslint rejects
+TS 7.0), so the new file is not linted.
+
 ### 2026-09-21 - The routes split had shipped two weeks ago and never ticked its own ticket
 
 `nightly/2026-09-21`. Closes ROADMAP's "Split `server/routes.ts` into domain-specific route
