@@ -22,7 +22,7 @@
     "node": "20"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.122.0",
+    "@anthropic-ai/sdk": "^0.126.0",
     "@driiva/contracts": "file:vendor/contracts",
     "@neondatabase/serverless": "^0.10.4",
     "@sentry/node": "^10.70.0",
