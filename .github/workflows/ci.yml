@@ -113,6 +113,11 @@ jobs:
         run: npm run build
         working-directory: functions
 
+      # vitest 5 needs Node >=22.12; build above stays on 20 to match the deployed runtime.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
       - name: Test functions
         run: npm test
         working-directory: functions
