@@ -505,6 +505,16 @@ h1, h2, h3, h4, h5, h6, .font-display {
   font-feature-settings: 'tnum' 1;
 }
 
+/* Chart axis and label text is drawn as SVG by recharts, so it cannot inherit
+   the utility class the rest of the readouts carry. Its ticks are numbers and
+   they shift as a series updates, which is the exact jitter tabular figures
+   exist to stop. */
+.recharts-wrapper text,
+.recharts-surface text {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
 /* A hero number is perceived rather than read, so it takes the tightest
    leading and tracking on the ladder and never wraps. */
 .readout-hero {
