@@ -5,9 +5,12 @@
  */
 
 import { Pool, neonConfig } from '@neondatabase/serverless';
-import * as ws from 'ws';
+import { WebSocket } from 'ws';
 
-neonConfig.webSocketConstructor = ws;
+// The class itself: under esModuleInterop a namespace import (`import * as ws`)
+// compiles to a wrapper object, which @neondatabase/serverless 1.x rejects by
+// type and which is not constructible at runtime.
+neonConfig.webSocketConstructor = WebSocket;
 
 let pool: Pool | null = null;
 
