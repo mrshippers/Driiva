@@ -5,6 +5,61 @@
 
 ## Entries
 
+### 2026-10-08 - Eight Dependabot bumps land on main
+
+PRs #152 to #159, merged 2026-10-08 (the bump commits are dated 5 Oct). Dependency changes only,
+no source changes.
+
+- **`/functions`:** `@vitest/coverage-v8` 5.0.1 to 5.0.3, `vite` 8.3.0 to 8.3.2, `firebase-functions`
+  7.3.2 to 7.4.0.
+- **Root:** `stripe` 22.6.1 to 23.0.0 (a major), `@radix-ui/react-checkbox` 1.3.2 to 1.3.11,
+  `@radix-ui/react-label` 2.1.7 to 2.1.15, `@radix-ui/react-navigation-menu` 1.2.13 to 1.2.22, and
+  the dev-deps group (7 updates).
+
+**Verified:** not checked here. The commit messages carry no test results, and the `stripe` major
+bump in particular is worth a read of its release notes before the next payments change.
+
+### 2026-09-28 - Neon could not open its WebSocket on main, and a Dependabot batch was merged
+
+`1ad3b4e` and the `deps/dependabot-2026-09-28` branch, which merged `pr145` to `pr151`.
+
+- **`functions/src/lib/neon.ts` now hands Neon the `WebSocket` class**, not `import * as ws`. Under
+  `esModuleInterop` the namespace import compiles to a wrapper object. `@neondatabase/serverless`
+  1.1 (#145) rejects that by type, so the functions build failed with TS2322, and the commit
+  message says it was a live runtime bug on main too: a read-only probe through main's built bundle
+  failed with "All attempts to open a WebSocket to connect to the database failed" (dev
+  `DATABASE_URL`, Node 22), while the fixed build opens the socket and reaches Postgres
+  authentication.
+- **The bumps that day were** `@anthropic-ai/sdk` and `@neondatabase/serverless` and `eslint` 10.10.0 to
+  10.11.0 (all in `/functions`), `firebase-admin` in the firebase group, `date-fns` 3.6.0 to 4.4.0,
+  `wouter` 3.7.1 to 3.11.0, `@vercel/speed-insights` 1.3.1 to 2.0.0, and the dev-deps group (10
+  updates).
+
+**Verified:** locally, because Actions is billing-blocked (commit message): lint, tsc, test types,
+design and fabrication laws, build, packages, 1227 root tests, functions build, 173 functions tests
+and runtime ESM safety 3/3, all green on the branch and on main as the baseline. The Firestore rules
+emulator job was not replicated.
+
+### 2026-09-23 - Functions tests move to vitest 5 on Node 22, and recharts axis text gets tabular figures
+
+`052c991` (#142) and `a76a707` (#143), landed after the OpenAPI entry below.
+
+- **`/functions` now runs vitest 5.0.1 with `@vitest/coverage-v8` 5.0.1 together, and declares `vite`
+  (^8.3.0) as a dev dependency.** vitest 5 needs Node >=22.12 and a declared vite peer, which
+  `legacy-peer-deps` skips. `.github/workflows/ci.yml` adds a `setup-node` step on Node 22 before
+  "Test functions"; the build step above it stays on Node 20 to match the deployed runtime. It
+  replaces Dependabot #132, which bumped coverage-v8 alone.
+- **`client/src/index.css` gives every `<text>` inside `.recharts-wrapper` and `.recharts-surface`
+  `font-variant-numeric: tabular-nums`.** Recharts draws ticks as SVG text, so the `.tabular` utility
+  never reaches them and axis numbers jitter as a series updates. Recovered from the I5 checkpoint on
+  `task/premium-i-brand`; the commit message says the rest of I5 is superseded by main. It sits
+  beside the 28 Aug fix to `PoolPanel`'s axes and covers every recharts chart, not just that one.
+- **Same-day Dependabot bumps** (#133 to #139): `@anthropic-ai/sdk` and `@sentry/node` 10.70.0 to
+  10.75.0 in `/functions`, the dev-deps group (8 updates), `@radix-ui/react-select` 2.2.5 to 2.3.7,
+  `react-slider` 1.3.5 to 1.4.7, `react-avatar` 1.1.10 to 1.2.6, `react-hover-card` 1.1.14 to 1.1.23.
+
+**Verified:** not stated in the commit messages.
+
 ### 2026-09-22 - The Express API has an OpenAPI spec, and a test that keeps it honest
 
 `nightly/2026-09-22`. Closes ROADMAP's "Add OpenAPI documentation for Express API" under "Code

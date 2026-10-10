@@ -1,6 +1,6 @@
 # Driiva - Current sprint (tickets)
 
-**Last updated:** 24 August 2026
+**Last updated:** 10 October 2026
 **Product Lead:** Keith Cheng (onboarded 27 June 2026)
 **External memory for AI sessions:** Work on the next unchecked ticket only; update this list when done.
 
@@ -191,6 +191,7 @@ These are known gaps that don't have tickets yet:
 
 ## Sprint: "Code Quality & UX Fixes" (Week 9–10)
 
+- [ ] GitHub Actions CI is billing-blocked, per the `1ad3b4e` commit message (28 Sep 2026): the Neon `ws` fix had to be verified locally (lint, tsc, test types, design and fabrication laws, build, packages, root tests, functions build and tests, runtime ESM safety) and the Firestore rules emulator job was not replicated. Clear the billing block so CI runs again; the last known state is 28 Sep, not re-checked since - *raised by `1ad3b4e`*
 - [x] Split quick-onboarding.tsx into 12 step components - *done: 1261 → 390 lines; 12 components in `client/src/pages/onboarding/steps/`*
 - [x] Add leaderboard in-memory cache (60s TTL) - *done: deduplicates Neon reads; auto-invalidates on score update*
 - [x] Implement `/api/auth/firebase` endpoint - *done: was returning 501; now verifies Firebase ID tokens*
