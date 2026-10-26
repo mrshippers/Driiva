@@ -1,8 +1,10 @@
 # Driiva - Current sprint (tickets)
 
-**Last updated:** 10 October 2026
+**Last updated:** 26 October 2026
 **Product Lead:** Keith Cheng (onboarded 27 June 2026)
 **External memory for AI sessions:** Work on the next unchecked ticket only; update this list when done.
+
+> **PAUSED, 26 October 2026.** Jamal has paused Driiva. No ticket below is scheduled and no date in this file moves forward until he lifts the pause. The Phase 2 rebuild sign-off (decisions D1 to D13 in `docs/rebuild_plan.md`) is parked, not rejected. Nothing here is deleted; the list stands as the state of play on 10 October 2026, the last change to land on `main`. AI sessions: do not pick up the next unchecked ticket while this note is here.
 
 ---
 

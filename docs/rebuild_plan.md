@@ -22,6 +22,8 @@
 
 ## DECISION POINTS — sign-off needed before Phase 2 (defaults proposed; silence = default)
 
+> **Parked, 26 October 2026.** Driiva is paused, so this sign-off is parked: silence does NOT mean default while the pause stands, and no Phase 2 module starts. See the note at the top of `ROADMAP.md`.
+
 | # | Decision | Default (one-line justification) | Alternative |
 |---|---|---|---|
 | D1 | Operational data store | **Firestore-only for operational entities** — it is already the authoritative store for every live entity; the Postgres mirrors are dead or read-models (audit-data §5), and the web app's realtime UX is onSnapshot-shaped | Postgres-only (bigger migration, loses realtime, replaces rules model) |
